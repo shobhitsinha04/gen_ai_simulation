@@ -43,7 +43,7 @@ class MemoryModule:
         """
         Stores the activities for a specific date and persona.
         activities_dict: A dictionary containing the activities for each persona and date.
-        Sample format: {"1": {"2024-07-10": [["sleep", "(00:00, 08:11)"], ...]}}
+        Sample format: {"1": {"2024-07-10": [["sports and exercise", "Gym", ["19:21", "20:02"]], ...]}}
         """
         for persona_id, dates in activities_dict.items():
             if persona_id not in self.daily_activities:
@@ -63,7 +63,7 @@ class MemoryModule:
         persona_id: The ID of the persona
         date: The date of the activities to be summarized.
         """
-        #retrieve the activities for each date and then converts the activties to a json string format for input to the LLM
+        #retrieve the activities for each date and then converts the activities to a json string format for input to the LLM
         activities = self.daily_activities.get(persona_id, {}).get(date, [])
         activities_json = json.dumps(activities)
         
@@ -88,7 +88,7 @@ class MemoryModule:
             self.summaries[persona_id] = {}
         self.summaries[persona_id][date] = summary
 
-        # initalize the memory access counter for the date
+        # initialize the memory access counter for the date
         if persona_id not in self.memory_access_counter:
             self.memory_access_counter[persona_id] = {}
         self.memory_access_counter[persona_id][date] = 0
@@ -216,30 +216,13 @@ class MemoryModule:
 
         for date, activities in self.daily_activities.get(persona_id, {}).items():
             for activity in activities:
-                if activity[-1] in locations and intention in activity[0].lower():
-                    relevant_activities.append(f"{activity[0]} at {activity[-1]} on {date}")
+                if activity[1] in locations and intention in activity[0].lower():
+                    relevant_activities.append(f"{activity[0]} at {activity[1]} on {date}")
         return relevant_activities
-    
-
-        # def retrieve_activities_by_location(self, persona_id: str, location_category: str):
-        # """
-        # Retrieves historical activities based on a specific location category.
-        # sample input: memory_module.retrieve_activities_by_location("1", "eat")
-        # """
-        # global cata_act
-        # locations = cata_act.get(location_category, [])
-        # relevant_activities = []
-
-        # for date, activities in self.daily_activities.get(persona_id, {}).items():  
-        #     for activity in activities:
-        #         if activity[-1] in locations:
-        #             relevant_activities.append(f"{activity[0]} at {activity[-1]} on {date}")
-        # return relevant_activities
-
 
     def generate_recommendation(self, persona_id: str, intention: str, location_category: str):
         """
-        Generates a recommendation basd on the intention and location and also looks at historically where all has person gone
+        Generates a recommendation based on the intention and location and also looks at historically where all has person gone
         """
         #getting the relevant activities from history for the type of location category
         relevant_activities = self.retrieve_activities_by_location(persona_id, location_category, intention)
@@ -374,28 +357,28 @@ if __name__ == "__main__":
     # Example activities for 7 days starting from today
     activities_dict = {
         "1": {
-            "01-07-2024": [["go to sleep", "(00:00, 06:58)", "home"], ["eat breakfast", "(07:24, 08:00)", "home"], ["go to work", "(09:00, 12:00)", "university"]],
-            "02-07-2024": [["go to sleep", "(00:00, 07:00)", "home"], ["jogging", "(08:30, 09:30)", "gym"]],
-            "03-07-2024": [["go to sleep", "(00:00, 06:45)", "home"], ["eat breakfast", "(07:15, 07:45)", "home"], ["office work", "(08:30, 12:00)", "university"]],
-            "04-07-2024": [["go to sleep", "(00:00, 06:30)", "home"], ["emails", "(08:00, 09:00)", "home"], ["client call", "(11:30, 12:30)", "home"]],
-            "05-07-2024": [["go to sleep", "(00:00, 07:15)", "home"], ["marketing research", "(09:00, 11:00)", "university"], ["brainstorming session", "(14:00, 16:00)", "university"]],
-            "06-07-2024": [["go to sleep", "(00:00, 07:00)", "home"], ["gardening", "(14:00, 16:00)", "home"], ["dinner", "(18:00, 19:00)", "restaurant"]],
-            "07-07-2024": [["go to sleep", "(00:00, 06:45)", "home"], ["eat breakfast", "(07:15, 07:45)", "home"], ["relaxing", "(08:00, 09:00)", "home"], ["watch movie", "(10:00, 12:00)", "cinemas"]]
+            "01-07-2024": [["sleep", "home", ["00:00", "06:58"]], ["eat breakfast", "home", ["07:24", "08:00"]], ["work", "university", ["09:00", "12:00"]]],
+            "02-07-2024": [["sleep", "home", ["00:00", "07:00"]], ["jogging", "gym", ["08:30", "09:30"]]],
+            "03-07-2024": [["sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["office work", "university", ["08:30", "12:00"]]],
+            "04-07-2024": [["sleep", "home", ["00:00", "06:30"]], ["emails", "home", ["08:00", "09:00"]], ["client call", "home", ["11:30", "12:30"]]],
+            "05-07-2024": [["sleep", "home", ["00:00", "07:15"]], ["marketing research", "university", ["09:00", "11:00"]], ["brainstorming session", "university", ["14:00", "16:00"]]],
+            "06-07-2024": [["sleep", "home", ["00:00", "07:00"]], ["gardening", "home", ["14:00", "16:00"]], ["dinner", "restaurant", ["18:00", "19:00"]]],
+            "07-07-2024": [["sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["relaxing", "home", ["08:00", "09:00"]], ["watch movie", "cinemas", ["10:00", "12:00"]]]
         },
         "2": {
-            "01-07-2024": [["sleep", "(23:00, 06:00)", "home"], ["exercise", "(06:30, 07:30)", "gym"]],
-            "02-07-2024": [["sleep", "(23:00, 06:00)", "home"], ["eat breakfast", "(08:00, 08:30)", "cafe"]],
-            "03-07-2024": [["sleep", "(23:00, 06:00)", "home"], ["online meeting", "(14:00, 15:00)", "home"]],
+            "01-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["exercise", "gym", ["06:30", "07:30"]]],
+            "02-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["eat breakfast", "cafe", ["08:00", "08:30"]]],
+            "03-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["online meeting", "home", ["14:00", "15:00"]]],
         },
         "3": {
-            "01-07-2024": [["sleep", "(22:00, 06:00)", "home"], ["morning run", "(06:30, 07:00)", "park"]],
-            "02-07-2024": [["sleep", "(22:00, 06:00)", "home"], ["eat breakfast", "(07:30, 08:00)", "home"]],
-            "03-07-2024": [["sleep", "(22:00, 06:00)", "home"], ["work", "(09:00, 17:00)", "office"]],
+            "01-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["morning run", "park", ["06:30", "07:00"]]],
+            "02-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["eat breakfast", "home", ["07:30", "08:00"]]],
+            "03-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["work", "office", ["09:00", "17:00"]]],
         },
         "4": {
-            "01-07-2024": [["sleep", "(23:00, 07:00)", "home"], ["yoga", "(07:30, 08:00)", "gym"]],
-            "02-07-2024": [["sleep", "(23:00, 07:00)", "home"], ["eat breakfast", "(08:30, 09:00)", "cafe"]],
-            "03-07-2024": [["sleep", "(23:00, 07:00)", "home"], ["work", "(10:00, 16:00)", "university"]],
+            "01-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["yoga", "gym", ["07:30", "08:00"]]],
+            "02-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["eat breakfast", "cafe", ["08:30", "09:00"]]],
+            "03-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["work", "university", ["10:00", "16:00"]]],
         }
     }
     
@@ -430,7 +413,7 @@ if __name__ == "__main__":
     
 
     # Generating and checking the monthly summary
-    end_date_str = "07-07-2024"  # assume this is the date that is passed on to the summmarize month function to generate the monthly summary for
+    end_date_str = "07-07-2024"  # assume this is the date that is passed on to the summarize month function to generate the monthly summary for
     for persona_id in activities_dict.keys():
         memory_module.summarize_month(persona_id, end_date_str)
         month_year = datetime.strptime(end_date_str, '%d-%m-%Y').strftime('%m-%Y')
@@ -463,19 +446,4 @@ if __name__ == "__main__":
 
 
 
-
-    # def retrieve_tasks_by_intention(self, persona_id: str, intention: str):
-    #     """
-    #     Retrieves historical tasks based on a specific intention by searching through summaries.
-    #     persona_id: The ID of the persona.
-    #     intention: The intention to search for in the summaries.
-    #     returns a list of tuples containing the date and summary where the intention was found. Format will be List[Tuple[str, str]].
-    #     """
-    #     relevant_tasks = []
-    #     for date, summary in self.summaries.get(persona_id, {}).items():
-    #         if intention in summary:
-    #             # Increase the access frequency of that date
-    #             self.memory_access_counter[persona_id][date] += 1
-    #             relevant_tasks.append((date, summary))
-    #     return relevant_tasks
 
