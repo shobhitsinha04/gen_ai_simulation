@@ -38,14 +38,20 @@ def time_exceed(t1, t2):
     
     return time1_obj > time2_obj
 
-def get_weekday(date_str):
+def get_weekday(date_str: str):
     # Parse the date string into a datetime object
     date_obj = datetime.datetime.strptime(date_str, '%d-%m-%Y')
     # Get the weekday name
     weekday = date_obj.strftime('%A')
     return weekday
 
-def gen_next_motivation(context, pre_mot, mem, date, weekday, time):
+def time_update(curr_time: str, min: int):
+    format = '%H:%M'
+    time_obj = datetime.datetime.strptime(curr_time, format)
+    new_time = time_obj + datetime.timedelta(minutes=min)
+    return new_time.strftime(format)
+
+def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
     msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
 Task: Based on current date and time, your personal information and recent arrangements, please randomly select your next activity from your daily activity dictionary, \
 and pick a location from the location list corresponds to the chosen activity. You should also decide the time duration for the selected activity.
@@ -124,7 +130,12 @@ Each activity in your daily activity dictionary is given in the format 'activity
                 # some kind of school
                 # TODO: 1. Call destination generation for the motivation => returning [name, [coord], 10 (in min)]
                 # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-                recommandation = memory_module.
+                recommandation = memory_module.generate_recommendation(str(i), res)
+                name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                res.append(name)
+                res.append(coord)
+                time = time_update(time, min)
+                res[2][1] = time
             else:
                 res.append(res[1])
                 # res.append(p[i][""])
