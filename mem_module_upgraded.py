@@ -284,7 +284,9 @@ class MemoryModule:
         prompt = (
             f"The persona has an activity info: {activities_str}. Based on the recommendation: '{recommendation}', "
             f"please pick the best choice from the list of places in the attached CSV file. Provide the name, coordinates, "
-            f"and an estimated transport time in minutes.\n"
+            f"and an estimated transport time in minutes. (do not give a range of numbers, but give a single choice which represents how long it will take in transport)\n"
+            f"Return the choice in this format - Name, [latitude, longitude], minutes"
+            f"The name should be a string, and the latitude and longitude should be floats. and the minutes should be an integer"
         )
 
         for place in places:
@@ -302,17 +304,18 @@ class MemoryModule:
             )
             choice = response['choices'][0]['message']['content'].strip()
             
-            #getting the details from the llm response
-            lines = choice.split(',')
-            name = lines[0].strip()
-            coordinates = lines[1].split(':')[1].strip().strip('()').split()
-            transport_time = int(lines[2].split(':')[1].strip().split()[0])
+            # getting the details from the llm response
+            # lines = choice.split(',')
+            # name = lines[0].strip()
+            # coordinates = lines[1].split(':')[1].strip().strip('()').split()
+            # transport_time = int(lines[2].split(':')[1].strip().split()[0])
 
-            return {
-                name,
-                [float(coord) for coord in coordinates],
-                transport_time
-            }
+            # return {
+            #     name,
+            #     [float(coord) for coord in coordinates],
+            #     transport_time
+            # }
+            return choice
 
         except openai.OpenAIError as e:
             print(f"Error generating choice: {e}")
@@ -320,8 +323,6 @@ class MemoryModule:
 
 
 
-
-    
     ##########################################################################################
     # FOR MEMORY DELETION
     ##########################################################################################
