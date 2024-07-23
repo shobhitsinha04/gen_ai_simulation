@@ -2,7 +2,9 @@ import json
 from typing import List, Tuple
 import openai
 from datetime import datetime, timedelta
-import spacy 
+import spacy
+import csv
+import pandas as pd
 
 # OpenAI API 
 openai.api_key = 'api key'
@@ -203,36 +205,50 @@ class MemoryModule:
                            
     ########################################################################################## 
     # FOR RETRIEVAL
-    ########################################################################################## 
-
-    def retrieve_activities_by_location(self, persona_id: str, location_category: str, intention: str):
+    ##########################################################################################
+    
+    def retrieve_activities_by_location(self, persona_id: str, activity_info: List):
         """
-        Retrieves historical activities based on a specific location category and intention.
-        sample input: memory_module.retrieve_activities_by_location("1", "eat", "eat breakfast")
+        Retrieves historical activities based on a specific activity information.
+        activity_info: List containing the intention, location category, and the time range.
+        Sample input: ["sports and exercise", "Gym", ["19:21", "20:02"]]
         """
         global cata_act
+
+        # getting the info from the list
+        intention = activity_info[0].lower()
+        location_category = activity_info[1].lower()
+        # time_range = activity_info[2]
+
         locations = cata_act.get(location_category, [])
         relevant_activities = []
 
         for date, activities in self.daily_activities.get(persona_id, {}).items():
             for activity in activities:
-                if activity[1] in locations and intention in activity[0].lower():
+                if activity[0] == intention and activity[1] in locations:
                     relevant_activities.append(f"{activity[0]} at {activity[1]} on {date}")
         return relevant_activities
 
-    def generate_recommendation(self, persona_id: str, intention: str, location_category: str):
+    def generate_recommendation(self, persona_id: str, activity_info: List):
         """
-        Generates a recommendation based on the intention and location and also looks at historically where all has person gone
+        Generates a recommendation based on the intention and location and also looks at historically where all the person has gone.
+        activity_info: List containing the intention, location category, and the time range.
+        Sample input: ["sports and exercise", "Gym", ["19:21", "20:02"]]
         """
-        #getting the relevant activities from history for the type of location category
-        relevant_activities = self.retrieve_activities_by_location(persona_id, location_category, intention)
+        # getting the relevant activities from history for the type of location category
+        relevant_activities = self.retrieve_activities_by_location(persona_id, activity_info)
         activities_str = "; ".join(relevant_activities)
         if not activities_str:
             activities_str = "No relevant historical activities found."
         
-        #creating the prompt 
+        intention = activity_info[0]
+        location_category = activity_info[1]
+        # time_range = activity_info[2]
+        
+        # creating the prompt
         prompt = (
             f"The persona has an intention to '{intention}' and a preference for the '{location_category}' category. "
+            # f"The time range is from {time_range[0]} to {time_range[1]}. "
             f"Based on historical activities: {activities_str}. Please give a line that can be used as a recommendation and help the persona choose a location for the activity."
         )
         try:
@@ -249,6 +265,63 @@ class MemoryModule:
         except openai.OpenAIError as e:
             print(f"Error generating recommendation: {e}")
             return "Error generating the recommendation. Please try again later."
+
+
+    def get_places_from_csv(self, file_path: str) -> List[dict[str, str]]:
+        places = []
+        df = pd.read_csv(file_path)
+        for _, row in df.iterrows():
+            places.append({
+                'Name': row['Name'],
+                'Coordinates': (row['Latitude'], row['Longitute'])
+            })
+        return places
+    
+    def generate_choice(self, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
+        places = self.get_places_from_csv(file_path)
+        activities_str = f"Activity: {activity_info[0]}, Location Category: {activity_info[1]}, Time: {activity_info[2]}"
+        
+        # Creating the prompt
+        prompt = (
+            f"The persona has an activity info: {activities_str}. Based on the recommendation: '{recommendation}', "
+            f"please pick the best choice from the list of places in the attached CSV file. Provide the name, coordinates, "
+            f"and an estimated transport time in minutes.\n"
+        )
+
+        for place in places:
+            prompt += f"{place['Name']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
+
+        # Call the OpenAI API to generate the choice
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=200,
+            )
+            choice = response['choices'][0]['message']['content'].strip()
+            
+            #getting the details from the llm response
+            lines = choice.split(',')
+            name = lines[0].strip()
+            coordinates = lines[1].split(':')[1].strip().strip('()').split()
+            transport_time = int(lines[2].split(':')[1].strip().split()[0])
+
+            return {
+                name,
+                [float(coord) for coord in coordinates],
+                transport_time
+            }
+
+        except openai.OpenAIError as e:
+            print(f"Error generating choice: {e}")
+            return {}
+
+
+
+
     
     ##########################################################################################
     # FOR MEMORY DELETION
@@ -354,36 +427,35 @@ cata_act = {
 if __name__ == "__main__":
     memory_module = MemoryModule()
     
-    # Example activities for 7 days starting from today
     activities_dict = {
         "1": {
-            "01-07-2024": [["sleep", "home", ["00:00", "06:58"]], ["eat breakfast", "home", ["07:24", "08:00"]], ["work", "university", ["09:00", "12:00"]]],
-            "02-07-2024": [["sleep", "home", ["00:00", "07:00"]], ["jogging", "gym", ["08:30", "09:30"]]],
-            "03-07-2024": [["sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["office work", "university", ["08:30", "12:00"]]],
-            "04-07-2024": [["sleep", "home", ["00:00", "06:30"]], ["emails", "home", ["08:00", "09:00"]], ["client call", "home", ["11:30", "12:30"]]],
-            "05-07-2024": [["sleep", "home", ["00:00", "07:15"]], ["marketing research", "university", ["09:00", "11:00"]], ["brainstorming session", "university", ["14:00", "16:00"]]],
-            "06-07-2024": [["sleep", "home", ["00:00", "07:00"]], ["gardening", "home", ["14:00", "16:00"]], ["dinner", "restaurant", ["18:00", "19:00"]]],
-            "07-07-2024": [["sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["relaxing", "home", ["08:00", "09:00"]], ["watch movie", "cinemas", ["10:00", "12:00"]]]
+            "01-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["eat", "restaurant", ["12:00", "13:00"]]],
+            "02-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]]],
+            "03-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["eat", "cafe", ["12:00", "13:00"]]],
+            "04-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["eat", "restaurant", ["12:00", "13:00"]]],
+            "05-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["work", "university", ["09:00", "17:00"]]],
+            "06-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]]],
+            "07-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["eat", "restaurant", ["12:00", "13:00"]]]
         },
         "2": {
-            "01-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["exercise", "gym", ["06:30", "07:30"]]],
-            "02-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["eat breakfast", "cafe", ["08:00", "08:30"]]],
-            "03-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["online meeting", "home", ["14:00", "15:00"]]],
+            "01-07-2024": [["eat", "home", ["07:00", "07:30"]], ["work", "office", ["09:00", "17:00"]]],
+            "02-07-2024": [["eat", "home", ["07:00", "07:30"]], ["work", "office", ["09:00", "17:00"]]],
+            "03-07-2024": [["eat", "home", ["07:00", "07:30"]], ["work", "office", ["09:00", "17:00"]]],
         },
         "3": {
-            "01-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["morning run", "park", ["06:30", "07:00"]]],
-            "02-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["eat breakfast", "home", ["07:30", "08:00"]]],
-            "03-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["work", "office", ["09:00", "17:00"]]],
+            "01-07-2024": [["leisure activities", "cinemas", ["20:00", "23:00"]]],
+            "02-07-2024": [["sports and exercise", "park", ["06:00", "07:00"]]],
         },
         "4": {
-            "01-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["yoga", "gym", ["07:30", "08:00"]]],
-            "02-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["eat breakfast", "cafe", ["08:30", "09:00"]]],
-            "03-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["work", "university", ["10:00", "16:00"]]],
+            "01-07-2024": [["medical treatment", "clinic", ["10:00", "11:00"]]],
+            "02-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]]],
         }
     }
-    
-    # Storing activities and generating summaries for each day
+
+    # Store daily activities
     memory_module.store_daily_activities(activities_dict)
+
+    # Generate summaries for each day
     for persona_id, dates in activities_dict.items():
         for date in dates.keys():
             memory_module.summarize_day(persona_id, date)
@@ -397,11 +469,10 @@ if __name__ == "__main__":
             if memory_module.day_counters[persona_id] % 7 == 0:
                 memory_module.summarize_week(persona_id, date)
 
-
     # Check the generated weekly summary for each persona
-    #getting the most recent date
+    # getting the most recent date
     most_recent_date_str = max(date for persona in activities_dict.values() for date in persona.keys())
-    #converts it to the right format and gets the iso week number 
+    # converts it to the right format and gets the iso week number 
     week_number = datetime.strptime(most_recent_date_str, '%d-%m-%Y').isocalendar()[1]
 
     for persona_id in activities_dict.keys():
@@ -410,7 +481,6 @@ if __name__ == "__main__":
         else:
             print(f"Weekly summary for persona {persona_id} for week {week_number} was not generated.")
         print("\n")
-    
 
     # Generating and checking the monthly summary
     end_date_str = "07-07-2024"  # assume this is the date that is passed on to the summarize month function to generate the monthly summary for
@@ -422,21 +492,25 @@ if __name__ == "__main__":
         else:
             print(f"Monthly summary for persona {persona_id} for {month_year} was not generated.")
         print("\n")
-    
+
     # Retrieving historical tasks based on location category and intention
+    activity_info = ["eat", "restaurant", ["12:00", "13:00"]]
     for persona_id in activities_dict.keys():
-        location_category = "eat"
-        intention = "eat"
-        activities = memory_module.retrieve_activities_by_location(persona_id, location_category, intention)
-        print(f"Historical activities for persona {persona_id} with intention '{intention}' and location category '{location_category}': {activities}")
+        activities = memory_module.retrieve_activities_by_location(persona_id, activity_info)
+        print(f"Historical activities for persona {persona_id} with activity info '{activity_info}': {activities}")
         print("\n")
 
     # Generating recommendation based on intention and location category
     for persona_id in activities_dict.keys():
-        intention = "have lunch"
-        location_category = "eat"
-        recommendation = memory_module.generate_recommendation(persona_id, intention, location_category)
-        print(f"Recommendation for persona {persona_id} with intention '{intention}' and location category '{location_category}': {recommendation}")
+        recommendation = memory_module.generate_recommendation(persona_id, activity_info)
+        print(f"Recommendation for persona {persona_id} with activity info '{activity_info}': {recommendation}")
+        print("\n")
+
+    # Generating choice based on the recommendation
+    file_path = 'around_unsw.csv' 
+    for persona_id in activities_dict.keys():
+        choice = memory_module.generate_choice(activity_info, recommendation, file_path)
+        print(f"Choice for persona {persona_id} with activity info '{activity_info}' and recommendation '{recommendation}': {choice}")
         print("\n")
 
     # Example: Deleting less important information
@@ -446,4 +520,17 @@ if __name__ == "__main__":
 
 
 
+    # def retrieve_activities_by_location(self, persona_id: str, location_category: str, intention: str):
+    #     """
+    #     Retrieves historical activities based on a specific location category and intention.
+    #     sample input: memory_module.retrieve_activities_by_location("1", "eat", "eat breakfast")
+    #     """
+    #     global cata_act
+    #     locations = cata_act.get(location_category, [])
+    #     relevant_activities = []
 
+    #     for date, activities in self.daily_activities.get(persona_id, {}).items():
+    #         for activity in activities:
+    #             if activity[0] == intention and activity[1] in locations:
+    #                 relevant_activities.append(f"{activity[0]} at {activity[1]} on {date} during {activity[2][0]} to {activity[2][1]}")
+    #     return relevant_activities
