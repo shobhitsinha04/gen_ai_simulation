@@ -6,13 +6,13 @@ import json
 from utils import llm_generate, gen_person_info
 from mem_module_upgraded import MemoryModule
 
-def validate_date(date_str):
+def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
     if not re.match(r'^\d{2}-\d{2}-\d{4}$', date_str):
         raise argparse.ArgumentTypeError("Invalid date format. Expected dd-mm-yyyy.")
     return date_str
 
-def valid_time(time_str):
+def valid_time(time_str: str):
     try:
         datetime.datetime.strptime(time_str, '%H:%M')
         return True
@@ -26,10 +26,10 @@ def get_weekday(date_str: str):
     weekday = date_obj.strftime('%A')
     return weekday
 
-def check_routine_finished(time):
+def check_routine_finished(time: str):
     return time == "23:59"
 
-def time_exceed(t1, t2):
+def time_exceed(t1: str, t2: str):
     format = '%H:%M'
     time1_obj = datetime.datetime.strptime(t1, format).time()
     time2_obj = datetime.datetime.strptime(t2, format).time()
