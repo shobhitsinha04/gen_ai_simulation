@@ -4,6 +4,7 @@ import re
 import json
 
 from utils import llm_generate, gen_person_info
+from mem_module_upgraded import MemoryModule
 
 activities_list = ["work", "go home", "eat", "sleep", "shopping", "sports and exercise", "excursion", 
                    "leisure activities", "medical treatment", "education", "religious activities", "trifles", 
@@ -87,6 +88,7 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
+    memory_module = MemoryModule()
 
     f1 = open("res/personas.json")
     p = json.load(f1)
@@ -118,11 +120,14 @@ Each activity in your daily activity dictionary is given in the format 'activity
                 # Check if llm generates activity that ends tomorrow
                 res[2][1] = "23:59"
 
-            # if (res[1] != 'Home' or res[1] != 'Workplace' or res[1] != 'School'):
+            if (res[1] != 'Home' or res[1] != 'Workplace' or res[1] != 'School'):
+                # some kind of school
                 # TODO: 1. Call destination generation for the motivation => returning [name, [coord], 10 (in min)]
                 # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-            # else:
-                # Update res to ["sleep", "Home", ["0:00", "7:29"], name, coord] format
+                recommandation = memory_module.
+            else:
+                res.append(res[1])
+                # res.append(p[i][""])
             
             # Next stage: path finder
 
