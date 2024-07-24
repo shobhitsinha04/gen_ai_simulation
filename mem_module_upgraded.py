@@ -3,7 +3,6 @@ from typing import List, Tuple
 import openai
 from datetime import datetime, timedelta
 import spacy
-import csv
 import pandas as pd
 
 # OpenAI API 
@@ -290,6 +289,7 @@ class MemoryModule:
         f"The name should be a string, and the latitude and longitude should be floats. The minutes should be an integer.(do not include the word minutes, in the minutes, just the integer)\n"
         f"Make sure not to output any other information other than just the choice, do not include any extra words"
         f"You should always responf with the required data in the format i mentioned above without any additional information, text or explanation"
+        f"Make sure that you try to match the activity info to a choice that is most relevant to the activity info, it has to be of the same category and not something random"
     )
 
         for place in places:
@@ -497,7 +497,7 @@ if __name__ == "__main__":
 
     # Example: Retrieving historical tasks based on location category and intention
     for persona_id in activities_dict.keys():
-        activity_info = ["eat", "restaurant", ["12:00", "13:00"]]
+        activity_info = ["shopping", "grocery", ["06:30", "07:30"]]
         recommendation = memory_module.generate_recommendation(persona_id, activity_info)
         print(f"Recommendation for persona {persona_id} with activity info '{activity_info}': {recommendation}")
         print("\n")
