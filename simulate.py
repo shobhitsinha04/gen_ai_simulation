@@ -4,47 +4,45 @@ import re
 import json
 
 from utils import llm_generate, gen_person_info
+from mem_module_upgraded import MemoryModule
 
-activities_list = ["work", "go home", "eat", "sleep", "shopping", "sports and exercise", "excursion", 
-                   "leisure activities", "medical treatment", "education", "religious activities", "trifles", 
-                   "social events"]
-
-cate = ["restaurant", "cafe", "pub and bar", "food court", "hotel", "grocery", "other shopping", "gym", "field", "park",
-        "cinemas", "stadium", "museum", "hospital", "clinic", "dentist", "university", "VET", "primary and secondary school", 
-        "preschool", "library", "other education", "church", "legal and financial service", "automotive service", 
-        "health and beauty service"]
-
-def validate_date(date_str):
+def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
     if not re.match(r'^\d{2}-\d{2}-\d{4}$', date_str):
         raise argparse.ArgumentTypeError("Invalid date format. Expected dd-mm-yyyy.")
     return date_str
 
-def valid_time(time_str):
+def valid_time(time_str: str):
     try:
         datetime.datetime.strptime(time_str, '%H:%M')
         return True
     except ValueError:
         return False
 
-def check_routine_finished(time):
-    return time == "23:59"
-
-def time_exceed(t1, t2):
-    format = '%H:%M'
-    time1_obj = datetime.datetime.strptime(t1, format).time()
-    time2_obj = datetime.datetime.strptime(t2, format).time()
-    
-    return time1_obj > time2_obj
-
-def get_weekday(date_str):
+def get_weekday(date_str: str):
     # Parse the date string into a datetime object
     date_obj = datetime.datetime.strptime(date_str, '%d-%m-%Y')
     # Get the weekday name
     weekday = date_obj.strftime('%A')
     return weekday
 
-def gen_next_motivation(context, pre_mot, mem, date, weekday, time):
+def check_routine_finished(time: str):
+    return time == "23:59"
+
+def time_exceed(t1: str, t2: str):
+    format = '%H:%M'
+    time1_obj = datetime.datetime.strptime(t1, format).time()
+    time2_obj = datetime.datetime.strptime(t2, format).time()
+    
+    return time1_obj > time2_obj
+
+def time_update(curr_time: str, min: int):
+    format = '%H:%M'
+    time_obj = datetime.datetime.strptime(curr_time, format)
+    new_time = time_obj + datetime.timedelta(minutes=min)
+    return new_time.strftime(format)
+
+def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
     msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
 Task: Based on current date and time, your personal information and recent arrangements, please randomly select your next activity from your daily activity dictionary, \
 and pick a location from the location list corresponds to the chosen activity. You should also decide the time duration for the selected activity.
@@ -87,6 +85,7 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
+    memory_module = MemoryModule()
 
     f1 = open("res/personas.json")
     p = json.load(f1)
@@ -114,16 +113,28 @@ Each activity in your daily activity dictionary is given in the format 'activity
                 # Check if llm generates invalid time
                 res = gen_next_motivation(context, cur_mot, [], args.date, weekday, time)
 
-            if (time_exceed(res[2][0], res[2][1])): 
+            if time_exceed(res[2][0], res[2][1]): 
                 # Check if llm generates activity that ends tomorrow
                 res[2][1] = "23:59"
 
-            # if (res[1] != 'Home' or res[1] != 'Workplace' or res[1] != 'School'):
-                # TODO: 1. Call destination generation for the motivation => returning [name, [coord], 10 (in min)]
+            if (res[1] != 'Home' or res[1] != 'Workplace' or not (res[0] == 'education' and p[i]["occupation"] == 'student')):
                 # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-            # else:
-                # Update res to ["sleep", "Home", ["0:00", "7:29"], name, coord] format
-            
+                recommandation = memory_module.generate_recommendation(str(i), res)
+                name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                res.append(name)
+                res.append(coord)
+                res[2][1] = time_update(res[2][1], min)
+            else:
+                res.append(res[1])
+                if res[1] == 'Home':
+                    res.append(p[i]['home'])
+                elif res[1] == 'Workplace':
+                    res.append(p[i]['work'])
+                else:
+                    res.append(p[i]['school'])
+                
+                # TODO: Update time
+
             # Next stage: path finder
 
             # Updating & storing data

@@ -3,7 +3,6 @@ from typing import List, Tuple
 import openai
 from datetime import datetime, timedelta
 import spacy
-import csv
 import pandas as pd
 
 # OpenAI API 
