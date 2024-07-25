@@ -33,7 +33,7 @@ def time_exceed(t1: str, t2: str):
     format = '%H:%M'
     time1_obj = datetime.datetime.strptime(t1, format).time()
     time2_obj = datetime.datetime.strptime(t2, format).time()
-    
+
     return time1_obj > time2_obj
 
 def time_update(curr_time: str, min: int):
@@ -52,7 +52,7 @@ Requirements for routine generation:
 2. The next activity should start at now, which is {}.
 3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
 
-Note: 
+Note:
 1. The format for the time should be in 24-hour format.
 2. The routine of a day must start at 0:00 and end at 23:59. \
 The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
@@ -90,7 +90,12 @@ if __name__ == '__main__':
     f1 = open("res/personas.json")
     p = json.load(f1)
 
-    weekday = get_weekday(args.date)
+    date = args.date
+    if (not date):
+        date = datetime.datetime.today().strftime("%d-%m-%Y")
+
+    weekday = get_weekday(date)
+
     f2 = open("res/activities.json")
     act = json.load(f2)
 
@@ -103,21 +108,19 @@ if __name__ == '__main__':
 
         context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
         context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
-Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:
+Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])
         while (not check_routine_finished(time)):
+            print(i)
+            print(time)
             # This is the loop that generate one day routine activity by activity (for one person)
-            res = gen_next_motivation(context, cur_mot, mem, args.date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
+            res = gen_next_motivation(context, cur_mot, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
 
             while (not valid_time(res[2][1])):
                 # Check if llm generates invalid time
-                res = gen_next_motivation(context, cur_mot, [], args.date, weekday, time)
+                res = gen_next_motivation(context, cur_mot, [], date, weekday, time)
 
-            if time_exceed(res[2][0], res[2][1]): 
-                # Check if llm generates activity that ends tomorrow
-                res[2][1] = "23:59"
-
-            if (res[1] != 'Home' or res[1] != 'Workplace' or not (res[0] == 'education' and p[i]["occupation"] == 'student')):
+            if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
                 # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
                 recommandation = memory_module.generate_recommendation(str(i), res)
                 name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
@@ -132,8 +135,12 @@ Each activity in your daily activity dictionary is given in the format 'activity
                     res.append(p[i]['work'])
                 else:
                     res.append(p[i]['school'])
-                
+
                 # TODO: Update time
+
+            if time_exceed(res[2][0], res[2][1]):
+                # Check if llm generates activity that ends tomorrow
+                res[2][1] = "23:59"
 
             # Next stage: path finder
 
@@ -141,9 +148,10 @@ Each activity in your daily activity dictionary is given in the format 'activity
             time = res[2][1]
 
             # Storing ["sleep", "Home", ["0:00", "7:29"], name, coord]
+            print(res)
             cur_mot.append(res)
 
-        with open("res/routine_{}_{}.json".format(args.date, i),'w') as f:  
+        with open("res/routine_{}_{}.json".format(date, i),'w') as f:
             json.dump(cur_mot, f)
 
         # TODO: 3. Per day per person storing into memory
