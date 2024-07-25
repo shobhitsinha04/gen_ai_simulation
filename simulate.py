@@ -90,7 +90,11 @@ if __name__ == '__main__':
     f1 = open("res/personas.json")
     p = json.load(f1)
 
-    weekday = get_weekday(args.date)
+    if (not args.date):
+        weekday = datetime.datetime.today().strftime("%d-%m-%y")
+    else:
+        weekday = get_weekday(args.date)
+    
     f2 = open("res/activities.json")
     act = json.load(f2)
 
@@ -149,3 +153,5 @@ Each activity in your daily activity dictionary is given in the format 'activity
         # TODO: 3. Per day per person storing into memory
 
     # TODO: 4. Store the memory into files
+
+    # TODO: 6. Update memory to delete unnecessary memory
