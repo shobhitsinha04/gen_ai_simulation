@@ -2,7 +2,7 @@ import random
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-model_name = "/g/data/hn98/models/llama/Meta-Llama-3-8B-Instruct"
+model_name = "/mnt/data728/datasets/meta-llama/Meta-Llama-3-8B-Instruct"
 
 def llm_generate(context, msg):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
