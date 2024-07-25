@@ -288,7 +288,8 @@ class MemoryModule:
         f"Return the choice in this format - Name, [latitude, longitude], minutes.\n"
         f"The name should be a string, and the latitude and longitude should be floats. The minutes should be an integer.(do not include the word minutes, in the minutes, just the integer)\n"
         f"Make sure not to output any other information other than just the choice, do not include any extra words"
-        f"You should always responf with the required data in the format i mentioned above without any additional information, text or explanation"
+        f"You should always respond with the required data in the format i mentioned above without any additional information, text or explanation.\n"
+        f"The following is the location dataset you can pick from: \n"
     )
 
         for place in places:
@@ -317,7 +318,14 @@ class MemoryModule:
             #     [float(coord) for coord in coordinates],
             #     transport_time
             # }
-            return choice
+            while not choice[-1].isdigit():
+                choice = choice[:-1]
+
+            comma_idx = choice.find(',')
+            name = '"' + choice[:comma_idx] + '"'
+            choice = "[" + name + choice[comma_idx:] + "]"
+            res = json.loads(choice)
+            return res
 
         except openai.OpenAIError as e:
             print(f"Error generating choice: {e}")
