@@ -266,10 +266,17 @@ class MemoryModule:
             return "Error generating the recommendation. Please try again later."
 
 
-    def get_places_from_csv(self, file_path: str) -> List[dict[str, str]]:
+    def get_places_from_csv(self, file_path: str, activity_info: List) -> List[dict[str, str]]:
         places = []
         df = pd.read_csv(file_path)
-        for _, row in df.iterrows():
+        location_category = activity_info[1].lower()
+
+        df['Category'] = df['Category'].str.lower()
+
+        relevant_places = []
+        relevant_places = df[df['Category'] == location_category]
+
+        for _, row in relevant_places.iterrows():
             places.append({
                 'Name': row['Name'],
                 'Coordinates': (row['Latitude'], row['Longitute'])
@@ -277,7 +284,7 @@ class MemoryModule:
         return places
     
     def generate_choice(self, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
-        places = self.get_places_from_csv(file_path)
+        places = self.get_places_from_csv(file_path, activity_info)
         activities_str = f"Activity: {activity_info[0]}, Location Category: {activity_info[1]}, Time: {activity_info[2]}"
         
         # Creating the prompt
@@ -306,18 +313,7 @@ class MemoryModule:
                 max_tokens=200,
             )
             choice = response['choices'][0]['message']['content'].strip()
-            
-            # getting the details from the llm response
-            # lines = choice.split(',')
-            # name = lines[0].strip()
-            # coordinates = lines[1].split(':')[1].strip().strip('()').split()
-            # transport_time = int(lines[2].split(':')[1].strip().split()[0])
-
-            # return {
-            #     name,
-            #     [float(coord) for coord in coordinates],
-            #     transport_time
-            # }
+        
             while not choice[-1].isdigit():
                 choice = choice[:-1]
 
@@ -417,8 +413,6 @@ class MemoryModule:
 
 
 #Testing the module 
-
-# Sample activities dictionary
 cata_act = {
     "work": ["..."],
     "go home": ["home"],
@@ -519,17 +513,6 @@ if __name__ == "__main__":
         print(f"Summaries for persona {persona_id} after deletion: {memory_module.summaries[persona_id]}")
 
 
-    # def retrieve_activities_by_location(self, persona_id: str, location_category: str, intention: str):
-    #     """
-    #     Retrieves historical activities based on a specific location category and intention.
-    #     sample input: memory_module.retrieve_activities_by_location("1", "eat", "eat breakfast")
-    #     """
-    #     global cata_act
-    #     locations = cata_act.get(location_category, [])
-    #     relevant_activities = []
 
-    #     for date, activities in self.daily_activities.get(persona_id, {}).items():
-    #         for activity in activities:
-    #             if activity[0] == intention and activity[1] in locations:
-    #                 relevant_activities.append(f"{activity[0]} at {activity[1]} on {date} during {activity[2][0]} to {activity[2][1]}")
-    #     return relevant_activities
+
+
