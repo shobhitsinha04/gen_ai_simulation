@@ -44,13 +44,18 @@ def time_update(curr_time: str, min: int):
 
 def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
     msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
-Task: Based on current date and time, your personal information and recent arrangements, please randomly select your next activity from your daily activity dictionary, \
+Some summaries about your historial behaviours are given below:
+{}
+
+Task: Based on current date and time, your personal information, recent arrangements and historical behaviours, please randomly select your next activity from your daily activity dictionary, \
 and pick a location from the location list corresponds to the chosen activity. You should also decide the time duration for the selected activity.
 
 Requirements for routine generation:
 1. You must consider how your character attributes and personality may affect your activity and location selection.
 2. The next activity should start at now, which is {}.
 3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
+4. You must take your historical behaviours in to consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
+by the activities done during the recent days.
 
 Note:
 1. The format for the time should be in 24-hour format.
@@ -69,7 +74,7 @@ Answer format: [activity name, location, [start time, end time]].
 5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
 
 Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
-""". format(date, weekday, time, pre_mot, time)
+""". format(date, weekday, time, pre_mot, mem, time)
 
     res = llm_generate(context, msg)
     return json.loads(res)
@@ -86,6 +91,7 @@ args = parser.parse_args()
 if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
     memory_module = MemoryModule()
+    # memory_module.store_daily_activities()
 
     f1 = open("res/personas.json")
     p = json.load(f1)
@@ -103,8 +109,20 @@ if __name__ == '__main__':
         cur_mot = []
         time = "0:00"
 
-        # TODO: 2. Weekly/dayly summary memory (weekly + recent 3 days/ all dayly)
-        mem = []
+        # TODO: 2. Weekly/daily summary memory (weekly + recent 3 days / all daily)
+        try:
+            monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
+            weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
+            daily_mem = ''
+            for i in range(3):
+                rec_day = (datetime.datetime.today() - datetime.timedelta(days=(i+1))).strftime("%d-%m-%Y")
+                daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[i][rec_day]
+            
+            mem = monthly_mem + weekly_mem + daily_mem
+            print("Mem: " + mem)
+        except KeyError as e:
+            print("Memory unavailable...")
+            mem = ''
 
         context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
         context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
@@ -155,5 +173,10 @@ Each activity in your daily activity dictionary is given in the format 'activity
             json.dump(cur_mot, f)
 
         # TODO: 3. Per day per person storing into memory
+
+    # Update memory
+    memory_module.summarize_day(i, date)
+    memory_module.summarize_month(i, date)
+    memory_module.summarize_week(i, date)
 
     # TODO: 4. Store the memory into files
