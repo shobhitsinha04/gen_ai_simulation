@@ -318,7 +318,8 @@ class MemoryModule:
                 choice = choice[:-1]
 
             comma_idx = choice.find(',')
-            name = '"' + choice[:comma_idx] + '"'
+            if choice[0] != '"':
+                name = '"' + choice[:comma_idx] + '"'
             choice = "[" + name + choice[comma_idx:] + "]"
             res = json.loads(choice)
             return res
