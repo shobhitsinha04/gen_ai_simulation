@@ -82,6 +82,7 @@ Important: You should always responds required data in json list format, but wit
 parser = argparse.ArgumentParser(description='genMotivation')
 # parser.add_argument('-a', action='store_true') # Generate activity list for each persona
 parser.add_argument('-d', '--date', type=validate_date, help="Date in the format dd-mm-yyyy")
+parser.add_argument('-n', '--num_of_days', type=int, default=1, help="Number of days to simulate")
 parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
 # parser.add_argument('--model', default = '...', type=str)
 # parser.add_argument('--population', default = 'population.json', type=str)
@@ -91,7 +92,6 @@ args = parser.parse_args()
 if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
     memory_module = MemoryModule()
-    # memory_module.store_daily_activities()
 
     f1 = open("res/personas.json")
     p = json.load(f1)
@@ -105,78 +105,92 @@ if __name__ == '__main__':
     f2 = open("res/activities.json")
     act = json.load(f2)
 
-    for i in range(len(p)):
-        cur_mot = []
-        time = "0:00"
+    for num in range(args.num_of_days):
+        mem_res = {}
 
-        # TODO: 2. Weekly/daily summary memory (weekly + recent 3 days / all daily)
-        try:
-            monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
-            weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
-            daily_mem = ''
-            for i in range(3):
-                rec_day = (datetime.datetime.today() - datetime.timedelta(days=(i+1))).strftime("%d-%m-%Y")
-                daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[i][rec_day]
-            
-            mem = monthly_mem + weekly_mem + daily_mem
-            print("Mem: " + mem)
-        except KeyError as e:
-            print("Memory unavailable...")
-            mem = ''
+        for i in range(len(p)):
+            cur_mot = []
+            time = "0:00"
 
-        context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
-        context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
-Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
-{}.""".format(act[i])
-        while (not check_routine_finished(time)):
-            print(i)
-            print(time)
-            # This is the loop that generate one day routine activity by activity (for one person)
-            res = gen_next_motivation(context, cur_mot, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
+            # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
+            try:
+                monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
+                weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
+                daily_mem = ''
+                for i in range(3):
+                    rec_day = (datetime.datetime.today() - datetime.timedelta(days=(i+1))).strftime("%d-%m-%Y")
+                    daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[i][rec_day]
+                
+                mem = monthly_mem + weekly_mem + daily_mem
+                print("Mem: " + mem)
+            except KeyError as e:
+                print("Memory unavailable...")
+                mem = ''
 
-            while (not valid_time(res[2][1])):
-                # Check if llm generates invalid time
-                res = gen_next_motivation(context, cur_mot, [], date, weekday, time)
+            context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
+            context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
+    Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
+    {}.""".format(act[i])
+            while (not check_routine_finished(time)):
+                print(i)
+                print(time)
+                # This is the loop that generate one day routine activity by activity (for one person)
+                res = gen_next_motivation(context, cur_mot, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
 
-            if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
-                # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-                recommandation = memory_module.generate_recommendation(str(i), res)
-                name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
-                res.append(name)
-                res.append(coord)
-                res[2][1] = time_update(res[2][1], min)
-            else:
-                res.append(res[1])
-                if res[1] == 'Home':
-                    res.append(p[i]['home'])
-                elif res[1] == 'Workplace':
-                    res.append(p[i]['work'])
+                while (not valid_time(res[2][1])):
+                    # Check if llm generates invalid time
+                    res = gen_next_motivation(context, cur_mot, [], date, weekday, time)
+
+                if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
+                    # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
+                    recommandation = memory_module.generate_recommendation(str(i), res)
+                    name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                    res.append(name)
+                    res.append(coord)
+                    res[2][1] = time_update(res[2][1], min)
                 else:
-                    res.append(p[i]['school'])
+                    res.append(res[1])
+                    if res[1] == 'Home':
+                        res.append(p[i]['home'])
+                    elif res[1] == 'Workplace':
+                        res.append(p[i]['work'])
+                    else:
+                        res.append(p[i]['school'])
 
-                # TODO: Update time
+                    # TODO: Update time
 
-            if time_exceed(res[2][0], res[2][1]):
-                # Check if llm generates activity that ends tomorrow
-                res[2][1] = "23:59"
+                if time_exceed(res[2][0], res[2][1]):
+                    # Check if llm generates activity that ends tomorrow
+                    res[2][1] = "23:59"
 
-            # Next stage: path finder
+                # TODO: Next stage: path finder
 
-            # Updating & storing data
-            time = res[2][1]
+                # Updating & storing data
+                time = res[2][1]
 
-            # Storing ["sleep", "Home", ["0:00", "7:29"], name, coord]
-            print(res)
-            cur_mot.append(res)
+                # Storing ["sleep", "Home", ["0:00", "7:29"], name, coord]
+                print(res)
+                cur_mot.append(res)
 
-        with open("res/routine_{}_{}.json".format(date, i),'w') as f:
-            json.dump(cur_mot, f)
+            with open("res/routine_{}_{}.json".format(date, i),'w') as f:
+                json.dump(cur_mot, f)
+            
+            mem_res[str(i)] = { date: cur_mot }
+        
+        # Per day storing into memory
+        memory_module.store_daily_activities(mem_res)
 
-        # TODO: 3. Per day per person storing into memory
+        for persona_id, dates in mem_res.items():
+            for date in dates.keys():
+                memory_module.summarize_day(persona_id, date)
+                
+                # Checking if 7 days have passed to generate a weekly summary
+                if memory_module.day_counters[persona_id] % 7 == 0:
+                    memory_module.summarize_week(persona_id, date)
 
-    # Update memory
-    memory_module.summarize_day(i, date)
-    memory_module.summarize_month(i, date)
-    memory_module.summarize_week(i, date)
+        memory_module.summarize_month(i, date)
+
+        date_obj = datetime.datetime.strptime(date, '%d-%m-%Y')
+        date = (date_obj + datetime.timedelta(days=1)).strftime("%d-%m-%Y")
 
     # TODO: 4. Store the memory into files
