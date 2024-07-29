@@ -112,7 +112,7 @@ if __name__ == '__main__':
             cur_mot = []
             time = "0:00"
 
-            # TODO: 2. Weekly/daily summary memory (weekly + recent 3 days / all daily)
+            # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
             try:
                 monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
                 weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                     # Check if llm generates activity that ends tomorrow
                     res[2][1] = "23:59"
 
-                # Next stage: path finder
+                # TODO: Next stage: path finder
 
                 # Updating & storing data
                 time = res[2][1]
@@ -177,7 +177,7 @@ if __name__ == '__main__':
             
             mem_res[str(i)] = { date: cur_mot }
         
-        # TODO: 3. Per day storing into memory
+        # Per day storing into memory
         memory_module.store_daily_activities(mem_res)
 
         for persona_id, dates in mem_res.items():
@@ -189,8 +189,6 @@ if __name__ == '__main__':
                     memory_module.summarize_week(persona_id, date)
 
         memory_module.summarize_month(i, date)
-
-        print(memory_module.monthly_summaries)
 
         date_obj = datetime.datetime.strptime(date, '%d-%m-%Y')
         date = (date_obj + datetime.timedelta(days=1)).strftime("%d-%m-%Y")
