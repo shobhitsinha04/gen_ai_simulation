@@ -44,14 +44,15 @@ class MemoryModule:
         """
         Stores the activities for a specific date and persona.
         activities_dict: A dictionary containing the activities for each persona and date.
-        Sample format: {"1": {"2024-07-10": [["sports and exercise", "Gym", ["19:21", "20:02"]], ...]}}
+        Sample format: {"1": {"2024-07-10": [["sleep", "Hotel", ["0:00", "7:29"], "name", "coord"], ...]}}
         """
         for persona_id, dates in activities_dict.items():
             if persona_id not in self.daily_activities:
                 self.daily_activities[persona_id] = {}
                 self.day_counters[persona_id] = 0
             for date, activities in dates.items():
-                self.daily_activities[persona_id][date] = activities
+                processed_activities = [[activity[0], activity[1], activity[2]] for activity in activities]
+                self.daily_activities[persona_id][date] = processed_activities
                 self.day_counters[persona_id] += 1
 
 
@@ -328,7 +329,25 @@ class MemoryModule:
             print(f"Error generating choice: {e}")
             return {}
 
+    ##########################################################################################
+    # FOR STORING MEMORY
+    ##########################################################################################
 
+    def store_memory_to_file(self):
+        with open('daily_activities.json', 'w') as f:
+            json.dump(self.daily_activities, f, indent = 4)
+        
+        with open('summaries.json', 'w') as f:
+            json.dump(self.summaries, f, indent = 4)
+        
+        with open('weekly_summaries.json', 'w') as f:
+            json.dump(self.weekly_summaries, f, indent = 4)
+
+        with open('monthly_summaries.json', 'w') as f:
+            json.dump(self.monthly_summaries, f, indent = 4)
+        
+        with open('memory_access_counter.json', 'w') as f:
+            json.dump(self.memory_access_counter, f, indent = 4)
 
     ##########################################################################################
     # FOR MEMORY DELETION
@@ -434,31 +453,32 @@ if __name__ == "__main__":
     
     # Example activities for 7 days starting from today
     activities_dict = {
-        "1": {
-            "01-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"]], ["eat breakfast", "home", ["07:24", "08:00"]], ["go to work", "university", ["09:00", "12:00"]]],
-            "02-07-2024": [["go to sleep", "home", ["00:00", "07:00"]], ["jogging", "gym", ["08:30", "09:30"]]],
-            "03-07-2024": [["go to sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["office work", "university", ["08:30", "12:00"]]],
-            "04-07-2024": [["go to sleep", "home", ["00:00", "06:30"]], ["emails", "home", ["08:00", "09:00"]], ["client call", "home", ["11:30", "12:30"]]],
-            "05-07-2024": [["go to sleep", "home", ["00:00", "07:15"]], ["marketing research", "university", ["09:00", "11:00"]], ["brainstorming session", "university", ["14:00", "16:00"]]],
-            "06-07-2024": [["go to sleep", "home", ["00:00", "07:00"]], ["gardening", "home", ["14:00", "16:00"]], ["dinner", "restaurant", ["18:00", "19:00"]]],
-            "07-07-2024": [["go to sleep", "home", ["00:00", "06:45"]], ["eat breakfast", "home", ["07:15", "07:45"]], ["relaxing", "home", ["08:00", "09:00"]], ["watch movie", "cinemas", ["10:00", "12:00"]]]
-        },
-        "2": {
-            "01-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["exercise", "gym", ["06:30", "07:30"]]],
-            "02-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["eat breakfast", "cafe", ["08:00", "08:30"]]],
-            "03-07-2024": [["sleep", "home", ["23:00", "06:00"]], ["online meeting", "home", ["14:00", "15:00"]]],
-        },
-        "3": {
-            "01-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["morning run", "park", ["06:30", "07:00"]]],
-            "02-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["eat breakfast", "home", ["07:30", "08:00"]]],
-            "03-07-2024": [["sleep", "home", ["22:00", "06:00"]], ["work", "office", ["09:00", "17:00"]]],
-        },
-        "4": {
-            "01-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["yoga", "gym", ["07:30", "08:00"]]],
-            "02-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["eat breakfast", "cafe", ["08:30", "09:00"]]],
-            "03-07-2024": [["sleep", "home", ["23:00", "07:00"]], ["work", "university", ["10:00", "16:00"]]],
-        }
+    "1": {
+        "01-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"], "Fitness First Randwick", (-33.918, 151.2412)],["eat breakfast", "home", ["07:24", "08:00"]],["go to work", "university", ["09:00", "12:00"], "The University of New South Wales", (-33.9173, 151.2313)]],
+        "02-07-2024": [["go to sleep", "home", ["00:00", "07:00"]],["jogging", "gym", ["08:30", "09:30"], "Plus Fitness 24/7 Kensington", (-33.9181, 151.228)]],
+        "03-07-2024": [["go to sleep", "home", ["00:00", "06:45"]],["eat breakfast", "home", ["07:15", "07:45"]],["office work", "university", ["08:30", "12:00"], "The University of New South Wales", (-33.9173, 151.2313)]],
+        "04-07-2024": [["go to sleep", "home", ["00:00", "06:30"]],["emails", "home", ["08:00", "09:00"]],["client call", "home", ["11:30", "12:30"]]],
+        "05-07-2024": [["go to sleep", "home", ["00:00", "07:15"]],["marketing research", "university", ["09:00", "11:00"], "The University of New South Wales", (-33.9173, 151.2313)],["brainstorming session", "university", ["14:00", "16:00"], "The University of New South Wales", (-33.9173, 151.2313)]],
+        "06-07-2024": [["go to sleep", "home", ["00:00", "07:00"]],["gardening", "home", ["14:00", "16:00"]],["dinner", "restaurant", ["18:00", "19:00"], "Tropical Green (Pho House)", (-33.9173, 151.2356)]],
+        "07-07-2024": [["go to sleep", "home", ["00:00", "06:45"]],["eat breakfast", "home", ["07:15", "07:45"]],["relaxing", "home", ["08:00", "09:00"]],["watch movie", "cinemas", ["10:00", "12:00"]]]
+    },
+    "2": {
+        "01-07-2024": [["sleep", "home", ["23:00", "06:00"]],["exercise", "gym", ["06:30", "07:30"], "Snap Fitness Randwick", (-33.9175, 151.2415)]],
+        "02-07-2024": [["sleep", "home", ["23:00", "06:00"]],["eat breakfast", "cafe", ["08:00", "08:30"], "Sharetea", (-33.9174, 151.233)]],
+        "03-07-2024": [["sleep", "home", ["23:00", "06:00"]],["online meeting", "home", ["14:00", "15:00"]]]
+    },
+    "3": {
+        "01-07-2024": [["sleep", "home", ["22:00", "06:00"]],["morning run", "park", ["06:30", "07:00"], "Queens Park", (-33.907, 151.2428)]],
+        "02-07-2024": [["sleep", "home", ["22:00", "06:00"]],["eat breakfast", "home", ["07:30", "08:00"]]],
+        "03-07-2024": [["sleep", "home", ["22:00", "06:00"]],["work", "office", ["09:00", "17:00"]]]
+    },
+    "4": {
+        "01-07-2024": [["sleep", "home", ["23:00", "07:00"]],["yoga", "gym", ["07:30", "08:00"], "UNSW Fitness & Aquatic Centre", (-33.9165, 151.233)]],
+        "02-07-2024": [["sleep", "home", ["23:00", "07:00"]],["eat breakfast", "cafe", ["08:30", "09:00"], "Campus Village Cafe", (-33.9176, 151.2333)]],
+        "03-07-2024": [["sleep", "home", ["23:00", "07:00"]],["work", "university", ["10:00", "16:00"], "The University of New South Wales", (-33.9173, 151.2313)]]
     }
+}
+
     
     # Storing activities and generating summaries for each day
     memory_module.store_daily_activities(activities_dict)
@@ -513,7 +533,5 @@ if __name__ == "__main__":
     for persona_id in activities_dict.keys():
         print(f"Summaries for persona {persona_id} after deletion: {memory_module.summaries[persona_id]}")
 
-
-
-
-
+    # Storing memory to files
+    memory_module.store_memory_to_file()
