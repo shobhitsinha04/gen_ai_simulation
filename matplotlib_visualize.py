@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Point, LineString
 import geopandas as gpd
 
+
 # Provided data
 activities_dict = {
     "1": {
