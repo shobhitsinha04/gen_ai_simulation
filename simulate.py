@@ -92,6 +92,7 @@ args = parser.parse_args()
 if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
     memory_module = MemoryModule()
+    memory_module.load_memory_from_file()
 
     f1 = open("res/personas.json")
     p = json.load(f1)
@@ -194,3 +195,4 @@ if __name__ == '__main__':
         date = (date_obj + datetime.timedelta(days=1)).strftime("%d-%m-%Y")
 
     # TODO: 4. Store the memory into files
+    memory_module.store_memory_to_file()

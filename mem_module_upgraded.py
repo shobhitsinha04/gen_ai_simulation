@@ -348,7 +348,39 @@ class MemoryModule:
         
         with open('memory_access_counter.json', 'w') as f:
             json.dump(self.memory_access_counter, f, indent = 4)
+    
 
+    def load_memory_from_file(self):
+        try:
+            with open('daily_activities.json', 'r') as f:
+                self.daily_activities = json.load(f)
+        except FileNotFoundError:
+            self.daily_activities = {}
+        
+        try:
+            with open('summaries.json', 'r') as f:
+                self.summaries = json.load(f)
+        except FileNotFoundError:
+            self.summaries = {}
+
+        try:
+            with open('weekly_summaries.json', 'r') as f:
+                self.weekly_summaries = json.load(f)
+        except FileNotFoundError:   
+            self.weekly_summaries = {}
+        
+        try:
+            with open('monthly_summaries.json', 'r') as f:
+                self.monthly_summaries = json.load(f)
+        except FileNotFoundError:
+            self.monthly_summaries = {}
+        
+        try:
+            with open('memory_access_counter.json', 'r') as f:
+                self.memory_access_counter = json.load(f)
+        except FileNotFoundError:
+            self.memory_access_counter = {}
+            
     ##########################################################################################
     # FOR MEMORY DELETION
     ##########################################################################################
