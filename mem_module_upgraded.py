@@ -380,7 +380,7 @@ class MemoryModule:
                 self.memory_access_counter = json.load(f)
         except FileNotFoundError:
             self.memory_access_counter = {}
-            
+
     ##########################################################################################
     # FOR MEMORY DELETION
     ##########################################################################################
@@ -399,7 +399,7 @@ class MemoryModule:
         # NER using spacy
         doc = self.nlp(summary)
 
-        # Initial counts of each type of thing
+        # Initial counts of each type of thing 
         counts = {
             "events": 0,
             "entities": 0,
