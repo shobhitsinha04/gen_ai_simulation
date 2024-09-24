@@ -4,9 +4,11 @@ import openai
 from datetime import datetime, timedelta
 import spacy
 import pandas as pd
+import numpy as np
+from math import exp
 
 # OpenAI API 
-openai.api_key = 'api key'
+openai.api_key = ''
 
 class MemoryModule:
     def __init__(self):
@@ -14,7 +16,7 @@ class MemoryModule:
         self.daily_activities = {}  # dict[str(persona id), dict[str, List[List[str]]](dict with key as date and value is the list of activities) ]
 
         # dictionary to store daily summaries 
-        self.summaries = {} 
+        self.summaries = {}  
         # dict[str(persona id), dict[str, str](dict with str as date and string as the summary)] 
 
         # dictionary to store weekly summaries
@@ -34,7 +36,8 @@ class MemoryModule:
         # dict[str(persona id), dict[str, int](dict with the key as the date and the value is the number of the times the memory is accessed)]
 
         #  pre defined threshold 
-        self.memory_threshold = 0.5 
+        self.memory_threshold = 0.76
+    
         #YET TO DECIDE THE VALUE
 
         # Loading the spaCy model
@@ -72,7 +75,7 @@ class MemoryModule:
         # Call OpenAI's API to generate a summary of the activities
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": f"Please summarize the following activities for the day in a concise, coherent paragraph: {activities_json}"}
@@ -124,7 +127,7 @@ class MemoryModule:
         # call the api to generate the summary
         try: 
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": f"Here are the daily summaries for the week ending on {end_date}. Please provide a concise and coherent weekly summary in a single paragraph, focusing on the main activities and events:\n{input_weekly_summary}"}
@@ -183,7 +186,7 @@ class MemoryModule:
 
                 try:
                     response = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
+                        model="gpt-4o-mini",
                         messages=[
                             {"role": "system", "content": "You are a helpful assistant."},
                             {"role": "user", "content": f"Please summarize the following activities for all {day}s in the month in a structured and coherent paragraph:\n{input_monthly_summary}"}
@@ -195,7 +198,7 @@ class MemoryModule:
                     continue
 
                 monthly_summary[day] = response['choices'][0]['message']['content'].strip()
-
+            
 
         month_year = end_date_dt.strftime('%m-%Y')
         if persona_id not in self.monthly_summaries:
@@ -216,7 +219,7 @@ class MemoryModule:
         global cata_act
 
         # getting the info from the list
-        intention = activity_info[0].lower()
+        intention = activity_info[0].lower() 
         location_category = activity_info[1].lower()
         # time_range = activity_info[2]
 
@@ -253,7 +256,7 @@ class MemoryModule:
         )
         try:
             response = openai.ChatCompletion.create(
-                model = "gpt-3.5-turbo",
+                model = "gpt-4o-mini",
                 messages=[
                     {"role":"system", "content":"You are a helpful assistant"},
                     {"role":"user", "content":prompt}
@@ -306,7 +309,7 @@ class MemoryModule:
         # Call the OpenAI API to generate the choice
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
@@ -393,8 +396,8 @@ class MemoryModule:
         categories = {
             "events" : 0.5, # (e.g., "passed a test," "attended a meeting")   #check if you can personalize this
             "entities": 0.2, # (e.g., "person," "location")
-            "actions": 0.3, # (e.g., "completed," "started")
-            "attributes": 0.3 # (e.g., "high score," "difficult task")
+            "actions": 0.2, # (e.g., "completed," "started")
+            "attributes": 0.1 # (e.g., "high score," "difficult task")
         }
         # NER using spacy
         doc = self.nlp(summary)
@@ -420,11 +423,27 @@ class MemoryModule:
             elif token.pos_ in ["ADJ", "ADV"]:
                 counts["attributes"] += 1
 
+        print(f"Counts for summary '{summary}': {counts}")
+        print()
+        print()
+        
         weighted_sum = sum(categories[cat] * counts[cat] for cat in categories)
         total_words = len(summary.split())
-        weighted_info_density = weighted_sum / total_words if total_words > 0 else 0
+        if total_words == 0:
+            return 0
+        max_weighted_sum = sum(categories[cat] * total_words for cat in categories)
+        weighted_info_density = weighted_sum / max_weighted_sum if max_weighted_sum > 0 else 0
 
+        print(f"Information density for summary '{summary}': {weighted_info_density}")
+        print()
+        print()
         return weighted_info_density
+    
+    def sigmoid(self,x):
+        """
+        Sigmoid function to normalize the importance score.
+        """
+        return 1 / (1 + exp(-x))
     
     def calculate_importance_score(self, persona_id: str, date: str, summary: str):
         """
@@ -435,7 +454,7 @@ class MemoryModule:
         weighted_info_density = self.calculate_information_density(summary)
 
         # Normalizing the recency and frequency 
-        max_recency = 90 #last 3 months
+        max_recency = 30 #last 1 month
         normalized_recency = 1 - min(recency / max_recency, 1) # it is (1 -) because the more recent memory should have higher score
         
         max_frequency = max(self.memory_access_counter.get(persona_id, {}).values(), default=0)  
@@ -445,23 +464,40 @@ class MemoryModule:
         normalized_frequency = min(frequency / max_frequency, 1)
 
         # Calculating the overall importance score for the memory
-        importance_score = (normalized_frequency + normalized_recency + weighted_info_density) / 3
-
-        return importance_score
+        # importance_score = (normalized_frequency + normalized_recency + weighted_info_density) / 3
+        importance_score = (0.6 * weighted_info_density + 0.2 * normalized_frequency + 0.2 * normalized_recency)
+        normalized_importance_score = self.sigmoid((importance_score * 10 ) - 5)
+        return normalized_importance_score * 100
 
     def deleting_memory(self):
         """
         Deletes the memory of the user based on the memory access threshold.
         """
+        # getting the list of dates to delete
         for persona_id, summaries in list(self.summaries.items()):
+            dates_to_delete = []
             for date, summary in list(summaries.items()):
-                # iterates over the summaries dictionary and deletes the low scoring daily summaries and daily activities
                 importance_score = self.calculate_importance_score(persona_id, date, summary)
-                if importance_score < self.memory_threshold:
-                    del self.summaries[persona_id][date]
-                    self.memory_access_counter[persona_id].pop(date, None)
-                    if date in self.daily_activities.get(persona_id, {}):
-                        self.daily_activities[persona_id].pop(date, None)
+                print(f"Importance score for persona {persona_id} on {date}: {importance_score}")
+                if (importance_score) < self.memory_threshold:
+                    dates_to_delete.append(date)
+        
+            # deleting the memories that are selected to be deleted
+            for date in dates_to_delete:
+                del self.summaries[persona_id][date]
+                self.memory_access_counter[persona_id].pop(date, None)
+                if date in self.daily_activities.get(persona_id, {}):
+                    self.daily_activities[persona_id].pop(date, None)
+
+        # for persona_id, summaries in list(self.summaries.items()):
+        #     for date, summary in list(summaries.items()):
+        #         # iterates over the summaries dictionary and deletes the low scoring daily summaries and daily activities
+        #         importance_score = self.calculate_importance_score(persona_id, date, summary)
+        #         if importance_score < self.memory_threshold:
+        #             del self.summaries[persona_id][date]
+        #             self.memory_access_counter[persona_id].pop(date, None)
+        #             if date in self.daily_activities.get(persona_id, {}):
+        #                 self.daily_activities[persona_id].pop(date, None)
 
 
 #Testing the module 
@@ -479,7 +515,114 @@ cata_act = {
     "trifles": ["legal and financial service", "automotive service", "health and beauty service"]
 }
 
-# Testing the MemoryModule
+############################################################################################################
+# TESTING THE MEMORY MODULE FOR MEMORY DELETION
+if __name__ == "__main__":
+    memory_module = MemoryModule()
+
+    activities_dict = {   #activities for testing extreme values
+    "1": {
+        # Balanced day with some entities, events, actions
+        "01-07-2024": [["sports and exercise", "Gym", ["19:21", "20:02"], "Fitness First Randwick", (-33.918, 151.2412)], 
+                        ["eat breakfast", "home", ["07:24", "08:00"]], 
+                        ["go to work", "university", ["09:00", "12:00"], "The University of New South Wales", (-33.9173, 151.2313)]],
+        
+        # Action-focused, project completion and task management, more attributes and actions
+        "02-07-2024": [["project completion", "office", ["08:00", "12:00"], "UNSW Office", (-33.9173, 151.2313), "Completed two research projects with high complexity"],
+                       ["task management", "home", ["14:00", "15:00"], "Managed 5 team members for event planning"],
+                       ["evening workout", "gym", ["18:30", "19:30"], "Fitness First", (-33.918, 151.2412)]],  # More actions, attributes (complexity)
+        
+        # Simple day, low event count, fewer entities, more attributes
+        "03-07-2024": [["relaxing at home", "home", ["10:00", "12:00"], "Simple morning with easy tasks"], 
+                       ["short walk", "park", ["16:00", "17:00"], "Local Park", (-33.917, 151.232)]]
+    },
+    "2": {
+        # Event-heavy day with multiple entities involved
+        "01-07-2024": [["attend board meeting", "office", ["09:00", "11:00"], "Global Corp HQ", (-33.918, 151.2301), "Discuss company performance with CEO and board members"], 
+                       ["client meeting", "conference room", ["12:00", "13:00"], "Sydney Financial Center", (-33.919, 151.232)], 
+                       ["team discussion", "office", ["14:00", "15:30"], "Main Office", (-33.920, 151.2330), "Discuss upcoming project launch"]],
+        
+        # Focus on actions and attributes
+        "02-07-2024": [["writing detailed report", "home", ["09:00", "11:00"], "Prepared in-depth financial analysis for Q2", "High difficulty"], 
+                       ["gym session", "Fitness First", ["17:00", "18:00"], "Fitness First Randwick", (-33.918, 151.2412)]],
+        
+        # Low-density day with simple actions and events
+        "03-07-2024": [["grocery shopping", "local market", ["08:00", "09:00"], "Randwick Market", (-33.9201, 151.234)], 
+                       ["afternoon nap", "home", ["13:00", "14:30"]]]
+    },
+    "3": {
+        # Event-heavy, more entities and events
+        "01-07-2024": [["attend tech conference", "Sydney Convention Center", ["09:00", "17:00"], "Tech Expo 2024", (-33.870, 151.206), "Network with industry leaders"], 
+                       ["dinner with colleagues", "restaurant", ["19:00", "20:00"], "Sydney Harbour Restaurant", (-33.861, 151.210)]],
+        
+        # Balanced day with moderate number of actions, entities, and events
+        "02-07-2024": [["prepare for client meeting", "home", ["08:00", "09:00"], "Prepared presentation"], 
+                       ["client meeting", "office", ["10:00", "11:30"], "Global HQ", (-33.920, 151.232)], 
+                       ["workout", "gym", ["18:00", "19:00"], "Fitness First", (-33.918, 151.2412)]],
+        
+        # Low-density day, more attributes and actions
+        "03-07-2024": [["work on personal project", "home", ["09:00", "12:00"], "Developed personal website"], 
+                       ["afternoon relaxation", "park", ["15:00", "16:00"], "Centennial Park", (-33.8915, 151.2497)]]
+    },
+    "4": {
+        # High-density day, mostly events and actions
+        "01-07-2024": [["presentation preparation", "office", ["08:00", "12:00"], "Corporate Office", (-33.920, 151.232), "Prepared presentation for company board"], 
+                       ["attend product launch", "office", ["14:00", "16:00"], "Corporate HQ", (-33.918, 151.230)]],
+        
+        # Low-density, balanced
+        "02-07-2024": [["write product report", "home", ["10:00", "12:00"], "Summary of product features", "Moderate complexity"], 
+                       ["evening stroll", "park", ["18:00", "19:00"], "Local Park", (-33.917, 151.2312)]],
+        
+        # Simple day with more attributes and few actions
+        "03-07-2024": [["brainstorm ideas", "home", ["11:00", "13:00"], "Conceptualized new marketing strategies"], 
+                       ["read book", "home", ["15:00", "17:00"], "Quiet afternoon reading"]]
+    }
+}
+    
+# Storing activities and generating summaries for each day
+    memory_module.store_daily_activities(activities_dict)
+    for persona_id, dates in activities_dict.items():
+        for date in dates.keys():
+            memory_module.summarize_day(persona_id, date)
+            if date in memory_module.summaries[persona_id]:  # Check if the summary was successfully generated
+                print(f"Summary for persona {persona_id} on {date}: {memory_module.summaries[persona_id][date]}")
+            else:
+                print(f"Summary for persona {persona_id} on {date} was not generated.")
+            print("\n")
+            
+            # Checking if 7 days have passed to generate a weekly summary
+            if memory_module.day_counters[persona_id] % 7 == 0:
+                memory_module.summarize_week(persona_id, date)
+
+    # Count the number of memories before deletion
+    total_memories_before = 0
+    for persona_id in activities_dict.keys():
+        total_memories_before += len(memory_module.summaries[persona_id])
+    print(f"Total number of memories before deletion: {total_memories_before}\n")
+
+    # Perform memory deletion
+    memory_module.deleting_memory()
+
+    # Count the number of memories after deletion
+    total_memories_after = 0
+    for persona_id in activities_dict.keys():
+        total_memories_after += len(memory_module.summaries[persona_id])
+    print()
+    print(f"Total number of memories after deletion: {total_memories_after}\n")
+
+    # Storing memory to files (if needed)
+    memory_module.store_memory_to_file()
+
+    # Example output to check remaining summaries after deletion
+    for persona_id in activities_dict.keys():
+        print(f"Summaries for persona {persona_id} after deletion: {memory_module.summaries[persona_id]}")
+
+
+
+############################################################################################################
+# TESTING THE MEMORY MODULE
+"""
+# Testing the MemoryModule normally
 if __name__ == "__main__":
     memory_module = MemoryModule()
     
@@ -567,3 +710,6 @@ if __name__ == "__main__":
 
     # Storing memory to files
     memory_module.store_memory_to_file()
+
+"""
+
