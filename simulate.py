@@ -106,11 +106,13 @@ if __name__ == '__main__':
     f2 = open("res/activities.json")
     act = json.load(f2)
 
+    # Per day simulation
     for num in range(args.num_of_days):
         mem_res = {}
 
+        # Per person simulation
         for i in range(len(p)):
-            cur_mot = []
+            cur_routine = []
             time = "0:00"
 
             # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
@@ -140,20 +142,24 @@ if __name__ == '__main__':
             if mem == '':
                 mem = 'No historical data available.'
 
+            # Prepare prompt
             context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
             context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
 Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])
+            
+            # Generate routine
             while (not check_routine_finished(time)):
                 print(i)
                 print(time)
                 # This is the loop that generate one day routine activity by activity (for one person)
-                res = gen_next_motivation(context, cur_mot, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
+                res = gen_next_motivation(context, cur_routine, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
 
                 while (not valid_time(res[2][1])):
                     # Check if llm generates invalid time
-                    res = gen_next_motivation(context, cur_mot, [], date, weekday, time)
+                    res = gen_next_motivation(context, cur_routine, [], date, weekday, time)
 
+                # Check if home/workplace/education
                 if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
                     # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
                     recommandation = memory_module.generate_recommendation(str(i), res)
@@ -172,6 +178,7 @@ Each activity in your daily activity dictionary is given in the format 'activity
 
                     # TODO: Update time
 
+                # Error handling
                 if time_exceed(res[2][0], res[2][1]):
                     # Check if llm generates activity that ends tomorrow
                     res[2][1] = "23:59"
@@ -184,12 +191,12 @@ Each activity in your daily activity dictionary is given in the format 'activity
                 # Storing ["sleep", "Home", ["0:00", "7:29"], name, coord]
                 print(res)
                 print(time)
-                cur_mot.append(res)
+                cur_routine.append(res)
 
             with open("res/routine_{}_{}.json".format(date, i),'w') as f:
-                json.dump(cur_mot, f)
+                json.dump(cur_routine, f)
             
-            mem_res[str(i)] = { date: cur_mot }
+            mem_res[str(i)] = { date: cur_routine }
 
             print("NEXT LOOP")
         
