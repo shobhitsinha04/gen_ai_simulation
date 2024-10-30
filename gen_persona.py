@@ -13,12 +13,11 @@ act_loc = {
     "sleep": ["Home", "Hotel"],
     "shopping": ["Grocery", "Other shopping"],
     "sports and exercise": ["Gym", "Field", "Park"],
-    "leisure activities": ["Home", "Cinemas", "Park", "Stadium", "Museum"],
+    "leisure activities": ["Home", "Pub and bar", "Cinemas", "Park", "Stadium", "Museum"],
     "medical treatment": ["Hospital", "Clinic", "Dentist"],
     "education": ["University", "VET", "Primary and Secondary School", "Preschool", "Library", "Other education"],
     "religious activities": ["Church"],
     "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service"],
-    "social events": []
 }
 
 def gen_random_trait(mean, std):
@@ -39,7 +38,7 @@ def gen_random_home(hdata: list[list[list[float]]]):
     c1, c2, c3, c4 = random.choice(hdata)
     return random_in_quad(c1, c2, c3, c4)
 
-def gen_random_school(csv, school):
+def gen_random_school(csv, school: str):
     if (school != 'Other education'):
         schools = csv[csv['Category'] == school]
     else:
@@ -69,10 +68,11 @@ and they eats in cafe more often, then the location list should be ["cafe", "hom
 4. Only people that have a job are allowed to have activity "work". People who are students should have activity "education" but not "work".
 5. People should all have activities "sleep", "eat" and "go home".
 6. Children can go to preschools between the ages of 4 to 6. At the age of 6, children has to start primary school.
-7. You are only allowed to choose some of the activities from the given common activity list. \
+7. VET under education category stands for Vocational Education and Training.
+8. You are only allowed to choose some of the activities from the given common activity list. \
 The selected possible locations of each activity has to be picked from the possible location list of that activity.
-8. You must NOT include activities that the person would never participate in. For example, an unemployed person should not have activity "work" as an element.
-9. The strings for activity names and location categories are case-sensitive.
+9. You must NOT include activities that the person would never participate in. For example, an unemployed person should not have activity "work" as an element.
+10. The strings for activity names and location categories are case-sensitive.
 Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2, ...]], activity 2: [...], ...}}.
 
 Three examples outputs:
@@ -103,30 +103,49 @@ if __name__ == '__main__':
     msg = ""
     f1 = open("data/population.json")
     data = json.load(f1)
+
+    # Include age distribution in the prompt
     for i in range(len(data['age'])):
         msg += "The distribution of males from age {} to {} is {}, where females is {}. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
 
-    msg += "Total employment-to-population ratio for males is {}, for females is {}, where the ratio for males at working age (from 15 to 64 years old) is {}, for female is {}.\
-The average age at retirement from labour force is {} years."\
+    # Include employment data in the prompt
+    msg += "\nTotal employment-to-population ratio for males is {}, for females is {}, where the ratio for males at working age (from 15 to 64 years old) is {}, for female is {}.\
+The average age at retirement from labour force is {} years.\n"\
 .format(data['employment']['total'][0], data['employment']['total'][1], data['employment']['working_age'][0], data['employment']['working_age'][1], data['retirement'])
 
-    msg += """Please generate 5 people and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
+    msg += """Please generate 5 independent personas and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
 Note:
-1. All students, including uni students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
+1. All students, including university students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
 2. Children can choose to start preschool at the age of 4, and must be in compulsory schooling by 6.        
 3. Unemployed people (including young kids and old people) who are not student, can only have occupation "unemployed" or "retiree".
-Answer format: [{name, age, gender, occupation}, {...}, ...].
+"""
 
-An example response with 5 personas:
-[{"name": "Jake Evans", "age": 17, "gender": "male", "occupation": "student"}, {"name": "Olivia Lee", "age": 3, "gender": "female", "occupation": "unemployed"}, \
-{"name": "Mia Harris", "age": 69, "gender": "female", "occupation": "retiree"}, {"name": "Thomas Turner", "age": 41, "gender": "male", "occupation": "YouTuber"}, {"name": "Ella Winter", "age": 26, "gender": "female", "occupation": "electrical engineer"}]
+    ans_format = """Answer format: [{name, age, gender, occupation}, {...}, ...].
+Example 1:
+[{"name": "Ethan Grayson", "age": 33, "gender": "male", "occupation": "fisherman"}, {"name": "Olivia Lee", "age": 3, "gender": "female", "occupation": "unemployed"}, \
+{"name": "Mia Harris", "age": 69, "gender": "female", "occupation": "retiree"}, {"name": "Thomas Turner", "age": 41, "gender": "male", "occupation": "YouTuber"}, {"name": "Li Wei", "age": 26, "gender": "female", "occupation": "electrical engineer"}]
+Example 2:
+[{"name": "Jake Evans", "age": 17, "gender": "male", "occupation": "student"}, {"name": "Yuki Tanaka", "age": 31, "gender": "female", "occupation": "dentist"}, \
+{"name": "Lily O'Connor", "age": 59, "gender": "female", "occupation": "traffic controller"}, {"name": "Maxwell Rivera", "age": 36, "gender": "male", "occupation": "retail assistant"}, {"name": "Ella Winter", "age": 28, "gender": "female", "occupation": "research assistant"}]
 """
 
     context = "You are a json generator who always responds required data in json format, but without any additional introduction, text or explanation."
 
     personas = []
     for i in range(args.number):
-        res = llm_generate(context, msg)
+        # Pick 5 potential jobs for selection
+        occ_data = data['occupation']
+        fields = list(occ_data.keys())
+        weights = list(occ_data.values())
+        potential_jobs = random.choices(fields, weights=weights, k=5)
+
+        final_msg = msg + note + \
+        "4. If the persona is employed, please pick one of the industry division from {}, and generate a occupation under this division. \
+For example, a persona with occupation 'fisherman' under the division 'Agriculture, Forestry and Fishing' should have occupation value as 'fisherman', \
+which means the division name shouldn't be included in the occupation value. e.g. {{\"name\": \"Ethan Grayson\", \"age\": 33, \"gender\": \"male\", \"occupation\": \"fisherman\"}}\n"\
+        .format(potential_jobs) + ans_format
+
+        res = llm_generate(context, final_msg)
         res = json.loads(res)
         personas.extend(res)
 

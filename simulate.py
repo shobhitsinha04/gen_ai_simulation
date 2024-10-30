@@ -58,7 +58,7 @@ Requirements for routine generation:
 by the activities done during the recent days.
 
 Note:
-1. The format for the time should be in 24-hour format.
+1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
 2. The routine of a day must start at 0:00 and end at 23:59. \
 The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
 For example, you should create activity like '["sleep", "Home", ["22:18", "23:59"]]'.
@@ -116,22 +116,34 @@ if __name__ == '__main__':
             # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
             try:
                 monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
-                weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
-                daily_mem = ''
-                for i in range(3):
-                    rec_day = (datetime.datetime.today() - datetime.timedelta(days=(i+1))).strftime("%d-%m-%Y")
-                    daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[i][rec_day]
-                
-                mem = monthly_mem + weekly_mem + daily_mem
-                print("Mem: " + mem)
             except KeyError as e:
-                print("Memory unavailable...")
-                mem = ''
+                print("Monthly Memory unavailable...")
+                monthly_mem = ''
+
+            try:
+                weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
+            except KeyError as e:
+                print("Weekly Memory unavailable...")
+                weekly_mem = ''
+
+            try:
+                daily_mem = ''
+                for d in range(3):
+                    rec_day = (datetime.datetime.today() - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
+                    daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[d][rec_day] + '. '
+            except KeyError as e:
+                print("Daily Memory: {}".format(daily_mem))
+
+            mem = monthly_mem + weekly_mem + daily_mem
+            print("Mem: " + mem)
+            
+            if mem == '':
+                mem = 'No historical data available.'
 
             context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
             context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
-    Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
-    {}.""".format(act[i])
+Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
+{}.""".format(act[i])
             while (not check_routine_finished(time)):
                 print(i)
                 print(time)
@@ -171,12 +183,15 @@ if __name__ == '__main__':
 
                 # Storing ["sleep", "Home", ["0:00", "7:29"], name, coord]
                 print(res)
+                print(time)
                 cur_mot.append(res)
 
             with open("res/routine_{}_{}.json".format(date, i),'w') as f:
                 json.dump(cur_mot, f)
             
             mem_res[str(i)] = { date: cur_mot }
+
+            print("NEXT LOOP")
         
         # Per day storing into memory
         memory_module.store_daily_activities(mem_res)

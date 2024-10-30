@@ -37,14 +37,19 @@ if __name__ == '__main__':
             print(f"An unexpected error occurred: {e}")
             sys.exit(1)
         
+        activity_list = [l[0] for l in routine]
+        location_list = [l[1] for l in routine]
+        name_list = [l[3] for l in routine]
         latitude_list = [l[4][0] for l in routine]
         longitude_list = [l[4][1] for l in routine]
 
-        submap.scatter(latitude_list, longitude_list, '#FF0000', size = 40, marker = False)
+        submap.scatter(latitude_list, longitude_list, color=['red' if location_list[x] == 'Home' else 'green' if location_list[x] == 'Workplace' else 'blue' if activity_list[x] == 'education' else 'yellow' for x in range(len(location_list))], 
+                       size = 40, marker = True, title=name_list, label=[location_list[x][0] if location_list[x] == 'Home' or location_list[x] == 'Workplace' else 'S' if activity_list[x] == 'education' else activity_list[x][0] for x in range(len(activity_list))])
         submap.plot(latitude_list, longitude_list, 'cornflowerblue', edge_width = 2.5)
         submap.draw("plots/mob_{}_{}.html".format(args.date, i))
 
-        overall_map.scatter(latitude_list, longitude_list, '#FF0000', size = 40, marker = False)
-        overall_map.plot(latitude_list, longitude_list, 'cornflowerblue', edge_width = 2.5)
+        if (i != 1):
+            overall_map.scatter(latitude_list, longitude_list, '#FF0000', size = 40, marker = False)
+            overall_map.plot(latitude_list, longitude_list, 'cornflowerblue', edge_width = 2.5)
 
     overall_map.draw("plots/overall_mob.html")

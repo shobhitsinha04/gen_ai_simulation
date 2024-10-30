@@ -337,49 +337,49 @@ class MemoryModule:
     ##########################################################################################
 
     def store_memory_to_file(self):
-        with open('daily_activities.json', 'w') as f:
+        with open('mem/daily_activities.json', 'w') as f:
             json.dump(self.daily_activities, f, indent = 4)
         
-        with open('summaries.json', 'w') as f:
+        with open('mem/summaries.json', 'w') as f:
             json.dump(self.summaries, f, indent = 4)
         
-        with open('weekly_summaries.json', 'w') as f:
+        with open('mem/weekly_summaries.json', 'w') as f:
             json.dump(self.weekly_summaries, f, indent = 4)
 
-        with open('monthly_summaries.json', 'w') as f:
+        with open('mem/monthly_summaries.json', 'w') as f:
             json.dump(self.monthly_summaries, f, indent = 4)
         
-        with open('memory_access_counter.json', 'w') as f:
+        with open('mem/memory_access_counter.json', 'w') as f:
             json.dump(self.memory_access_counter, f, indent = 4)
     
 
     def load_memory_from_file(self):
         try:
-            with open('daily_activities.json', 'r') as f:
+            with open('mem/daily_activities.json', 'r') as f:
                 self.daily_activities = json.load(f)
         except FileNotFoundError:
             self.daily_activities = {}
         
         try:
-            with open('summaries.json', 'r') as f:
+            with open('mem/summaries.json', 'r') as f:
                 self.summaries = json.load(f)
         except FileNotFoundError:
             self.summaries = {}
 
         try:
-            with open('weekly_summaries.json', 'r') as f:
+            with open('mem/weekly_summaries.json', 'r') as f:
                 self.weekly_summaries = json.load(f)
         except FileNotFoundError:   
             self.weekly_summaries = {}
         
         try:
-            with open('monthly_summaries.json', 'r') as f:
+            with open('mem/monthly_summaries.json', 'r') as f:
                 self.monthly_summaries = json.load(f)
         except FileNotFoundError:
             self.monthly_summaries = {}
         
         try:
-            with open('memory_access_counter.json', 'r') as f:
+            with open('mem/memory_access_counter.json', 'r') as f:
                 self.memory_access_counter = json.load(f)
         except FileNotFoundError:
             self.memory_access_counter = {}
