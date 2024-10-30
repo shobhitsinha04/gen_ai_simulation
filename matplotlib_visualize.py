@@ -89,8 +89,8 @@ for idx, (persona_id, coords) in enumerate(persona_coords.items()):
     gpd.GeoSeries(line).plot(ax=ax, color=colors[idx])
 
     # Annotate the points with coordinates
-    for point, activity in zip(gdf.geometry, coords):
-        plt.annotate(f"{(point.y, point.x)}", (point.x, point.y), textcoords="offset points", xytext=(5,5), ha='right', fontsize=8)
+    # for point, activity in zip(gdf.geometry, coords):
+    #     plt.annotate(f"{(point.y, point.x)}", (point.x, point.y), textcoords="offset points", xytext=(5,5), ha='right', fontsize=8)
 
 # Adjust axis limits dynamically based on the data
 all_coords = [(xy[1], xy[0]) for coords in persona_coords.values() for xy in coords]  # Switch x and y
