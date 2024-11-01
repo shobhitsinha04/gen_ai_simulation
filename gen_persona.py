@@ -79,9 +79,9 @@ Three examples outputs:
 1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
 "sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
 2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "eat": ["2 meals per day", ["Home", "Food court"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
-"education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}       
+"education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}
 3. {{"go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Park"]], \
-"leisure activities": ["everyday", ["Park"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}   
+"leisure activities": ["everyday", ["Park"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}
 
 Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
 """.format(str(act_loc))
@@ -104,6 +104,10 @@ if __name__ == '__main__':
     f1 = open("data/population.json")
     data = json.load(f1)
 
+    occ_data = data['occupation']
+    fields = list(occ_data.keys())
+    weights = list(occ_data.values())
+
     # Include age distribution in the prompt
     for i in range(len(data['age'])):
         msg += "The distribution of males from age {} to {} is {}, where females is {}. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
@@ -114,38 +118,44 @@ The average age at retirement from labour force is {} years.\n"\
 .format(data['employment']['total'][0], data['employment']['total'][1], data['employment']['working_age'][0], data['employment']['working_age'][1], data['retirement'])
 
     msg += """Please generate 5 independent personas and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
-Note:
+"""
+    note = """Note:
 1. All students, including university students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
-2. Children can choose to start preschool at the age of 4, and must be in compulsory schooling by 6.        
+2. Children can choose to start preschool at the age of 4, and must be in compulsory schooling by 6.
 3. Unemployed people (including young kids and old people) who are not student, can only have occupation "unemployed" or "retiree".
 """
 
-    ans_format = """Answer format: [{name, age, gender, occupation}, {...}, ...].
-Example 1:
+    ans_format = """Important: Output has to be a list of dictionary, where each dictionary has keys 'name', 'age', 'gender' and 'occupation'.
+Output format: [{name, age, gender, occupation}, {...}, ...].
+"""
+    example = """Example output 1:
 [{"name": "Ethan Grayson", "age": 33, "gender": "male", "occupation": "fisherman"}, {"name": "Olivia Lee", "age": 3, "gender": "female", "occupation": "unemployed"}, \
 {"name": "Mia Harris", "age": 69, "gender": "female", "occupation": "retiree"}, {"name": "Thomas Turner", "age": 41, "gender": "male", "occupation": "YouTuber"}, {"name": "Li Wei", "age": 26, "gender": "female", "occupation": "electrical engineer"}]
-Example 2:
+Example output 2:
 [{"name": "Jake Evans", "age": 17, "gender": "male", "occupation": "student"}, {"name": "Yuki Tanaka", "age": 31, "gender": "female", "occupation": "dentist"}, \
 {"name": "Lily O'Connor", "age": 59, "gender": "female", "occupation": "traffic controller"}, {"name": "Maxwell Rivera", "age": 36, "gender": "male", "occupation": "retail assistant"}, {"name": "Ella Winter", "age": 28, "gender": "female", "occupation": "research assistant"}]
 """
 
     context = "You are a json generator who always responds required data in json format, but without any additional introduction, text or explanation."
 
+    print("======== Start! ========")
     personas = []
     for i in range(args.number):
         # Pick 5 potential jobs for selection
-        occ_data = data['occupation']
-        fields = list(occ_data.keys())
-        weights = list(occ_data.values())
         potential_jobs = random.choices(fields, weights=weights, k=5)
-
         final_msg = msg + note + \
         "4. If the persona is employed, please pick one of the industry division from {}, and generate a occupation under this division. \
 For example, a persona with occupation 'fisherman' under the division 'Agriculture, Forestry and Fishing' should have occupation value as 'fisherman', \
-which means the division name shouldn't be included in the occupation value. e.g. {{\"name\": \"Ethan Grayson\", \"age\": 33, \"gender\": \"male\", \"occupation\": \"fisherman\"}}\n"\
-        .format(potential_jobs) + ans_format
+which means DON'T include the division name in the occupation value. e.g. {{\"name\": ..., \"age\": ..., \"gender\": ..., \"occupation\": \"fisherman\"}}\n"\
+        .format(potential_jobs) + \
+        "5. When generating personas, don't have to always include student, retiree or unemployed people. Generate persona based on the distribution of population." + ans_format
 
+        print("Final msg: " + final_msg)
+        print("=== Waiting for LLAMA ===")
         res = llm_generate(context, final_msg)
+
+        print("Persona it {}:\noutput: {}".format(i, res))
+
         res = json.loads(res)
         personas.extend(res)
 
@@ -165,7 +175,7 @@ which means the division name shouldn't be included in the occupation value. e.g
         personas[i]["home"] = gen_random_home(hdata)
         if (personas[i]["occupation"] == "student"):
             personas[i]["school"] = gen_random_school(csv, daily_act[i]["education"][1][0])
-        elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):        
+        elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
             personas[i]["work"] = gen_random_workplace(csv)
 
     with open('res/personas.json','w+') as f3:
