@@ -9,15 +9,15 @@ from utils import llm_generate, gen_person_info, random_in_quad
 act_loc = {
     "work": ["Workplace"],
     "go home": ["Home"],
-    "eat": ["Home", "Restaurant", "Cafe", "Pub and bar", "Food court"],
+    "meal": ["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"],
     "sleep": ["Home", "Hotel"],
-    "shopping": ["Grocery", "Other shopping"],
-    "sports and exercise": ["Gym", "Field", "Park"],
-    "leisure activities": ["Home", "Pub and bar", "Cinemas", "Park", "Stadium", "Museum"],
-    "medical treatment": ["Hospital", "Clinic", "Dentist"],
-    "education": ["University", "VET", "Primary and Secondary School", "Preschool", "Library", "Other education"],
-    "religious activities": ["Church"],
-    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service"],
+    "shopping": ["Grocery", "Other Shopping"],
+    "sports and exercise": ["Gym", "Field", "Outdoors"],
+    "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
+                           "Library", "Drink and Dessert Shop", "Social Event"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool", "Library", "Other Education"],
+    "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
+    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
 }
 
 def gen_random_trait(mean, std):
@@ -63,10 +63,10 @@ Also, generate the frequency of each activity.
 Note:
 1. The minimum amount of common activities a person may have is 5. There's not upper limit, as long as there's enough time for the person. Some people tend to have more daily activities than others.
 2. The location list for each chosen activity cannot be empty.
-3. The location list of an activity should be ordered in possibility of going to the location. For example, if a person's location list for "eat" is ["home", "cafe"], \
-and they eats in cafe more often, then the location list should be ["cafe", "home"].
+3. The location list of an activity should be ordered in possibility of going to the location. For example, if a person's location list for "meal" is ["home", "cafe"], \
+and they have their meals in cafe more often, then the location list should be ["cafe", "home"].
 4. Only people that have a job are allowed to have activity "work". People who are students should have activity "education" but not "work".
-5. People should all have activities "sleep", "eat" and "go home".
+5. People should all have activities "sleep", "meal" and "go home".
 6. Children can go to preschools between the ages of 4 to 6. At the age of 6, children has to start primary school.
 7. VET under education category stands for Vocational Education and Training.
 8. You are only allowed to choose some of the activities from the given common activity list. \
@@ -76,12 +76,12 @@ The selected possible locations of each activity has to be picked from the possi
 Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2, ...]], activity 2: [...], ...}}.
 
 Three examples outputs:
-1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
+1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
 "sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
-2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "eat": ["2 meals per day", ["Home", "Food court"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
+2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
 "education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}
-3. {{"go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Park"]], \
-"leisure activities": ["everyday", ["Park"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}
+3. {{"go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+"leisure activities": ["everyday", ["Outdoors"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}
 
 Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
 """.format(str(act_loc))
