@@ -1,6 +1,7 @@
 import random
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from mem_module_upgraded import MemoryModule
 
 model_name = "/mnt/data728/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct"
 
@@ -47,3 +48,27 @@ def random_in_quad(v1, v2, v3, v4):
             x = s * v1[0] + t * v2[0] + (1 - s - t) * v3[0]
             y = s * v1[1] + t * v2[1] + (1 - s - t) * v3[1]
             return (x, y)
+
+def mem_retrieval(memory_module: MemoryModule, persona: int):
+    # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
+    try:
+        monthly_mem = memory_module.monthly_summaries[persona][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
+    except KeyError as e:
+        print("Monthly Memory unavailable...")
+        monthly_mem = ''
+
+    try:
+        weekly_mem = memory_module.weekly_summaries[persona][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
+    except KeyError as e:
+        print("Weekly Memory unavailable...")
+        weekly_mem = ''
+
+    try:
+        daily_mem = ''
+        for d in range(3):
+            rec_day = (datetime.datetime.today() - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
+            daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[d][rec_day] + '. '
+    except KeyError as e:
+        print("Daily Memory: {}".format(daily_mem))
+
+    return monthly_mem + weekly_mem + daily_mem

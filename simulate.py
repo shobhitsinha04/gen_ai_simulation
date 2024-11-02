@@ -3,11 +3,11 @@ import datetime
 import re
 import json
 
-import recommend as rcmd
+import dest_phy.recommend as rcmd
+from dest_phy.topk_lossy_count import *
 from helper.utils import llm_generate
-from helper.prompt import gen_person_info
+from helper.prompt import person_info_prompt, next_motivation_prompt
 from mem_module_upgraded import MemoryModule
-from topk_lossy_count import *
 
 def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
@@ -46,39 +46,7 @@ def time_update(curr_time: str, min: int):
     return new_time.strftime(format)
 
 def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
-    msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
-Some summaries about your historial behaviours are given below:
-{}
-
-Task: Based on current date and time, your personal information, recent arrangements and historical behaviours, please randomly select your next activity from your daily activity dictionary, \
-and pick a location from the location list corresponds to the chosen activity. You should also decide the time duration for the selected activity.
-
-Requirements for routine generation:
-1. You must consider how your character attributes and personality may affect your activity and location selection.
-2. The next activity should start at now, which is {}.
-3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
-4. You must take your historical behaviours in to consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
-by the activities done during the recent days.
-
-Note:
-1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
-2. The routine of a day must start at 0:00 and end at 23:59. \
-The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
-For example, you should create activity like '["sleep", "Home", ["22:18", "23:59"]]'.
-3. When selecting the activity, you must take the frequency of the activity into consideration.
-4. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity.
-Answer format: [activity name, location, [start time, end time]].
-
-5 example outputs:
-1. ["sleep", "Home", ["0:00", "7:29"]]
-2. ["work", "Workplace", ["13:32", "17:30"]]
-3. ["eat", "Cafe", ["11:49", "12:12"]]
-4. ["sleep", "Hotel", ["22:25", "23:59"]]
-5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
-
-Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
-""". format(date, weekday, time, pre_mot, mem, time)
-
+    msg = next_motivation_prompt(pre_mot, mem, date, weekday, time)
     res = llm_generate(context, msg)
     return json.loads(res)
 
@@ -154,7 +122,7 @@ if __name__ == '__main__':
                 mem = 'No historical data available.'
 
             # Prepare prompt
-            context = gen_person_info(args.location, p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
+            context = person_info_prompt(args.location, p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
             context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
 Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])
@@ -171,19 +139,21 @@ Each activity in your daily activity dictionary is given in the format 'activity
                     res = gen_next_motivation(context, cur_routine, [], date, weekday, time)
 
                 # Check if home/workplace/education
-                # TODO: Divide and conquer 
                 if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
-                    # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-                    recommandation = memory_module.generate_recommendation(str(i), res)
-                    # name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
-                    # TODO another model 'mix', add arg
-                    # TODO check: is the user location (previous) correct
-                    user_loc = cur_routine[-1][-1]
-                    name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
-                    # TODO: miss min
+                    if (args.model == 'physical' or args.model == 'physical_mix') :
+                        # TODO another model 'mix', add arg
+                        # TODO check: is the user location (previous) correct
+                        # TODO: miss min
+                        user_loc = cur_routine[-1][-1]
+                        name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
+                    else:
+                        recommandation = memory_module.generate_recommendation(str(i), res)
+                        name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
                     
                     res.append(name)
                     res.append(coord)
+
+                    # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
                     res[2][1] = time_update(res[2][1], min)
                 else:
                     res.append(res[1])

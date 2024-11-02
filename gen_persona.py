@@ -5,7 +5,7 @@ import json
 import random
 
 from helper.utils import llm_generate, random_in_quad
-from helper.prompt import gen_person_info
+from helper.prompt import person_info_prompt
 
 act_loc = {
     "work": ["Workplace"],
@@ -56,7 +56,7 @@ def gen_random_workplace(csv):
 def gen_daily_activities(data):
     daily_act = []
     for p in data:
-        global_context = gen_person_info(p["name"], p["age"], p["gender"], p["occupation"], p["personality"]["ext"], p["personality"]["agr"], p["personality"]["con"], p["personality"]["neu"], p["personality"]["ope"])
+        global_context = person_info_prompt(p["name"], p["age"], p["gender"], p["occupation"], p["personality"]["ext"], p["personality"]["agr"], p["personality"]["con"], p["personality"]["neu"], p["personality"]["ope"])
         msg = """The common activity list is given by {}, where the keys are the activities, and the values are lists of locations that the activitiies\
 might take place.
 Based on your personal information and personality, please pick some daily activities from the common activity list that you are likely to participate, together with some possible locations that you might choose for those activities. \
