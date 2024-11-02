@@ -1,3 +1,17 @@
+act_loc = {
+    "work": ["Workplace"],
+    "go home": ["Home"],
+    "meal": ["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"],
+    "sleep": ["Home", "Hotel"],
+    "shopping": ["Grocery", "Other Shopping"],
+    "sports and exercise": ["Gym", "Field", "Outdoors"],
+    "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
+                        "Library", "Drink and Dessert Shop", "Social Event"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool", "Library", "Other Education"],
+    "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
+    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
+}
+
 def person_info_prompt(loc, name, age, gender, occ, ext, arg, con, neu, ope):
     msg = """You are a person who lived in {}. You have the following personal infomation: name: {}, age: {}, gender: {}, occupation: {}. 
 Your personality is determined based on the following 5 domains, where the full score of each domain is 24:
@@ -10,6 +24,38 @@ People low in this domain is less structured and less organized. They may procra
 5. openness to experience: {} scores, where people with high score in openness tend to have a broad range of interests and be more adventurous and creative. \
 Conversely, people low in this domain are often much more traditional and may struggle with abstract thinking.
 """.format(loc, name, age, gender, occ, ext, arg, con, neu, ope)
+    return msg
+
+def daily_activity_prompt():
+    msg = """The common activity list is given by {}, where the keys are the activities, and the values are lists of locations that the activitiies\
+might take place.
+Based on your personal information and personality, please pick some daily activities from the common activity list that you are likely to participate, together with some possible locations that you might choose for those activities. \
+Also, generate the frequency of each activity.
+Note:
+1. The minimum amount of common activities a person may have is 5. There's not upper limit, as long as there's enough time for the person. Some people tend to have more daily activities than others.
+2. The location list for each chosen activity cannot be empty.
+3. The location list of an activity should be ordered in possibility of going to the location. For example, if a person's location list for "meal" is ["home", "cafe"], \
+and they have their meals in cafe more often, then the location list should be ["cafe", "home"].
+4. Only people that have a job are allowed to have activity "work". People who are students should have activity "education" but not "work".
+5. People should all have activities "sleep", "meal" and "go home".
+6. Children can go to preschools between the ages of 4 to 6. At the age of 6, children has to start primary school.
+7. VET under education category stands for Vocational Education and Training.
+8. You are only allowed to choose some of the activities from the given common activity list. \
+The selected possible locations of each activity has to be picked from the possible location list of that activity.
+9. You must NOT include activities that the person would never participate in. For example, an unemployed person should not have activity "work" as an element.
+10. The strings for activity names and location categories are case-sensitive.
+Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2, ...]], activity 2: [...], ...}}.
+
+Three examples outputs:
+1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
+"sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
+2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
+"education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}
+3. {{"go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+"leisure activities": ["everyday", ["Outdoors"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}
+
+Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
+""".format(str(act_loc))
     return msg
 
 def next_motivation_prompt(pre_mot, mem, date: str, weekday: str, time: str):
