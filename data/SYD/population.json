@@ -21,9 +21,9 @@
     ],
     "employment": {
         "total": [67.2, 59.9],
-        "working_age": [67.2, 59.9]
+        "working_age": [67.2, 59.9],
+        "retirement": 56.9
     },
-    "retirement": 56.9,
     "education": {
         "PhD": 1.7,
         "Postgraduate": 13.4,
