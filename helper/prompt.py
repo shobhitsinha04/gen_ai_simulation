@@ -7,7 +7,7 @@ act_loc = {
     "sports and exercise": ["Gym", "Field", "Outdoors"],
     "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
                         "Library", "Drink and Dessert Shop", "Social Event"],
-    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool", "Library", "Other Education"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool"],
     "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
     "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
 }
