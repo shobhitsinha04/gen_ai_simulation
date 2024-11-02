@@ -18,29 +18,45 @@ def gen_random_personality(data):
 
     return personality
 
-def gen_random_home(hdata: list[list[list[float]]]):
+def gen_random_home_SYD(hdata: list[list[list[float]]]):
     c1, c2, c3, c4 = random.choice(hdata)
     return random_in_quad(c1, c2, c3, c4)
 
-def gen_random_school(csv, school: str):
+def gen_random_school_SYD(csv, school: str):
     if (school != 'Other education'):
         schools = csv[csv['Category'] == school]
     else:
         return ['undefined']
 
-    ran_sch = schools.sample(n=1)
-    return [ran_sch['Latitude'].values[0], ran_sch['Longitute'].values[0]]
+    return gen_random_place_SYD(schools)
 
-def gen_random_workplace(csv):
+def gen_random_place_SYD(csv):
     # Need to be changed tocreasonable workplace
-    ran_wp = csv.sample(n=1)
-    return [ran_wp['Latitude'].values[0], ran_wp['Longitute'].values[0]]
+    ran_p = csv.sample(n=1)
+    return [ran_p['Latitude'].values[0], ran_p['Longitute'].values[0]]
+
+def gen_random_school_TKY(school: str):
+    data = open('POI_data/{}_ca_poi.csv'.format(school)) 
+    schools = pd.read_csv(data)
+
+    return gen_random_place_TKY(schools)
+
+def gen_random_workplace_TKY(industry: str):
+    data = open('POI_data/Workplace/{}_ca_poi.csv'.format(industry)) 
+    workplaces = pd.read_csv(data)
+
+    return gen_random_place_TKY(workplaces)
+
+def gen_random_place_TKY(csv):
+    # Need to be changed tocreasonable workplace
+    ran_p = csv.sample(n=1)
+    return [ran_p['lat'].values[0], ran_p['lng'].values[0]]
 
 def gen_daily_activities(data, loc):
     daily_act = []
     for p in data:
         global_context = person_info_prompt(loc, p["name"], p["age"], p["gender"], p["occupation"], p["personality"]["ext"], p["personality"]["agr"], p["personality"]["con"], p["personality"]["neu"], p["personality"]["ope"])
-        msg = daily_activity_prompt()
+        msg = daily_activity_prompt(args.location)
         res = llm_generate(global_context, msg)
         daily_act.append(json.loads(res))
 
@@ -89,7 +105,7 @@ Output format: [{name, age, gender, occupation}, {...}, ...].
         potential_jobs = random.choices(fields, weights=weights, k=5)
         final_msg = msg + \
         "4. If the persona is employed, please pick one of the industry division from {}, and then assign the 'occupation' attribute of the persona \
-to be the picked industry division. e.g. {{\"name\": ..., \"age\": ..., \"gender\": ..., \"occupation\": \"Manufacturing\"}}\n".format(potential_jobs) + \
+to be the picked industry division. e.g. {{\"name\": Hikaru Satou, \"age\": 29, \"gender\": female, \"occupation\": \"Manufacturing\"}}\n".format(potential_jobs) + \
         "5. When generating personas, don't have to always include student, retiree or unemployed people. \
 Generate persona based on the distribution of population, and the age and sex of the persona." + ans_format
 
@@ -113,17 +129,26 @@ Generate persona based on the distribution of population, and the age and sex of
     with open('res/activities.json','w+') as f2:
         json.dump(daily_act, f2)
 
-    # TODO: residental places
-    homes = open('data/home.json') 
-    hdata = json.load(homes)
+    if (args.location == 'Sydney'):
+        csv = pd.read_csv('data/SYD/around_unsw.csv')
+        homes = open('data/SYD/home.json') 
+        hdata = json.load(homes)
 
-    csv = pd.read_csv('data/around_unsw.csv')
-    for i in range(len(personas)):
-        personas[i]["home"] = gen_random_home(hdata)
-        if (personas[i]["occupation"] == "student"):
-            personas[i]["school"] = gen_random_school(csv, daily_act[i]["education"][1][0])
-        elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
-            personas[i]["work"] = gen_random_workplace(csv)
+        for i in range(len(personas)):
+            personas[i]["home"] = gen_random_home_SYD(hdata)
+            if (personas[i]["occupation"] == "student"):
+                personas[i]["school"] = gen_random_school_SYD(csv, daily_act[i]["education"][1][0])
+            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
+                personas[i]["work"] = gen_random_place_SYD(csv)
+    else:
+        homes = open('POI_data/Home_ca_poi.csv') 
+        hdata = pd.read_csv(homes)
+        for i in range(len(personas)):
+            personas[i]["home"] = gen_random_place_TKY(hdata)
+            if (personas[i]["occupation"] == "student"):
+                personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
+            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
+                personas[i]["work"] = gen_random_workplace_TKY(personas[i]["occupation"])
 
     with open('res/personas.json','w+') as f3:
         json.dump(personas, f3)

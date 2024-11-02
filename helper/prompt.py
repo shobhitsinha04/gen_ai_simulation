@@ -6,8 +6,8 @@ act_loc = {
     "shopping": ["Grocery", "Other Shopping"],
     "sports and exercise": ["Gym", "Field", "Outdoors"],
     "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
-                        "Library", "Drink and Dessert Shop", "Social Event"],
-    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool", "Library", "Other Education"],
+        "Library", "Drink and Dessert Shop", "Social Event"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool"],
     "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
     "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
 }
@@ -63,7 +63,12 @@ Conversely, people low in this domain are often much more traditional and may st
 """.format(loc, name, age, gender, occ, ext, arg, con, neu, ope)
     return msg
 
-def daily_activity_prompt():
+def daily_activity_prompt(loc):
+    if loc == 'Sydney':
+        example = activity_eg_SYD()
+    else:
+        example = activity_eg_TKY()
+
     msg = """The common activity list is given by {}, where the keys are the activities, and the values are lists of locations that the activitiies\
 might take place.
 Based on your personal information and personality, please pick some daily activities from the common activity list that you are likely to participate, together with some possible locations that you might choose for those activities. \
@@ -82,18 +87,27 @@ The selected possible locations of each activity has to be picked from the possi
 9. You must NOT include activities that the person would never participate in. For example, an unemployed person should not have activity "work" as an element.
 10. The strings for activity names and location categories are case-sensitive.
 Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2, ...]], activity 2: [...], ...}}.
+""" + example + """Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
+""".format(str(act_loc))
+    return msg
 
-Three examples outputs:
+def activity_eg_TKY():
+    return """Three examples outputs:
+1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
+"leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}}
+2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Outdoors"]], \
+"leisure activities": ["everyday", ["Entertainment", "Drink and Dessert Shop", "Pub and Bar", "Home", "Social Event"]], "education": ["every workday", ["Vocational Training"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
+3. {{"work": ["every workday", "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+"leisure activities": ["everyday", ["Outdoors", "Home", "Social Event", "Entertainment", "Pub and Bar"]], "trifles": ["once every two weeks", ["Medical Service"]]}}\n"""
+
+def activity_eg_SYD():
+    return """Three examples outputs:
 1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
 "sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
 2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
 "education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}
-3. {{"go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
-"leisure activities": ["everyday", ["Outdoors"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}
-
-Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
-""".format(str(act_loc))
-    return msg
+3. {{"work": ["every workday", "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+"leisure activities": ["everyday", ["Outdoors"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}\n"""
 
 def next_motivation_prompt(pre_mot, mem, date: str, weekday: str, time: str):
     msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
