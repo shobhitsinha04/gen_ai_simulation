@@ -3,3 +3,6 @@ plots
 backup.txt
 output_persona.json
 data/TKY/population_backup.json
+
+__pycache__
+helper/__pycache__

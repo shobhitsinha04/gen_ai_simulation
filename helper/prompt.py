@@ -12,6 +12,43 @@ act_loc = {
     "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
 }
 
+def persona_prompt(data, loc):
+    msg = ''
+
+    # Include age distribution in the prompt
+    for i in range(len(data['age'])):
+        msg += "The probability of males from age {} to {} is {}%, where females is {}. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
+
+    # Include employment data in the prompt
+    if loc == 'Sydney': 
+        msg += persona_employ_SYD_prompt(data['employment'])
+    else:
+        msg += persona_employ_TKY_prompt(data['employment'])
+
+    msg += """Please generate 5 independent personas and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
+"""
+    note = """Note:
+1. All students, including university students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
+2. Children can choose to start preschool at the age of 4, and must be in compulsory schooling by 6.
+3. Unemployed people (including young kids and old people) who are not student, can only have occupation "unemployed" or "retiree".
+"""
+    return msg + note
+
+def persona_employ_SYD_prompt(data):
+    # Include employment data in the prompt
+    msg = "\nTotal employment-to-population ratio for males is {}, for females is {}, where the ratio for males at working age (from 15 to 64 years old) is {}, for female is {}.\
+The average age at retirement from labour force is {} years.\n"\
+.format(data['total'][0], data['total'][1], data['working_age'][0], data['working_age'][1], data['retirement'])
+    
+    return msg
+
+def persona_employ_TKY_prompt(data):
+    # Include employment data in the prompt
+    msg = "\nTotal employment-to-population ratio for males is {}, for females is {}. The retirement age is {}.\n"\
+.format(data['total'][0], data['total'][1], data['retirement'])
+    
+    return msg
+
 def person_info_prompt(loc, name, age, gender, occ, ext, arg, con, neu, ope):
     msg = """You are a person who lived in {}. You have the following personal infomation: name: {}, age: {}, gender: {}, occupation: {}. 
 Your personality is determined based on the following 5 domains, where the full score of each domain is 24:
