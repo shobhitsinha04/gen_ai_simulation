@@ -5,7 +5,7 @@ import json
 
 import dest_phy.recommend as rcmd
 from dest_phy.topk_lossy_count import *
-from helper.utils import llm_generate
+from helper.utils import llm_generate, mem_retrieval
 from helper.prompt import person_info_prompt, next_motivation_prompt
 from mem_module_upgraded import MemoryModule
 
@@ -93,28 +93,8 @@ if __name__ == '__main__':
             cur_routine = []
             time = "0:00"
 
-            # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
-            try:
-                monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
-            except KeyError as e:
-                print("Monthly Memory unavailable...")
-                monthly_mem = ''
-
-            try:
-                weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
-            except KeyError as e:
-                print("Weekly Memory unavailable...")
-                weekly_mem = ''
-
-            try:
-                daily_mem = ''
-                for d in range(3):
-                    rec_day = (datetime.datetime.today() - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
-                    daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[d][rec_day] + '. '
-            except KeyError as e:
-                print("Daily Memory: {}".format(daily_mem))
-
-            mem = monthly_mem + weekly_mem + daily_mem
+            # Retrieve memory
+            mem = mem_retrieval(memory_module, i, date)
             print("Mem: " + mem)
             
             if mem == '':

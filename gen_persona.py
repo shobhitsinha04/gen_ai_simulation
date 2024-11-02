@@ -18,7 +18,9 @@ def gen_random_personality(data):
 
     return personality
 
-def gen_random_home(hdata: list[list[list[float]]]):
+def gen_random_home():
+    homes = open('data/home.json') 
+    hdata = json.load(homes)
     c1, c2, c3, c4 = random.choice(hdata)
     return random_in_quad(c1, c2, c3, c4)
 
@@ -133,8 +135,8 @@ which means DON'T include the division name in the occupation value. e.g. {{\"na
     with open('res/activities.json','w+') as f2:
         json.dump(daily_act, f2)
 
-    homes = open('data/home.json') # TODO: residental places
-    hdata = json.load(homes)
+    # TODO: residental places
+    hdata = gen_random_home()
 
     csv = pd.read_csv('data/around_unsw.csv')
     for i in range(len(personas)):

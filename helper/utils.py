@@ -1,5 +1,6 @@
 import random
 import torch
+import datetime
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from mem_module_upgraded import MemoryModule
 
@@ -49,7 +50,7 @@ def random_in_quad(v1, v2, v3, v4):
             y = s * v1[1] + t * v2[1] + (1 - s - t) * v3[1]
             return (x, y)
 
-def mem_retrieval(memory_module: MemoryModule, persona: int):
+def mem_retrieval(memory_module: MemoryModule, persona: int, date):
     # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
     try:
         monthly_mem = memory_module.monthly_summaries[persona][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
