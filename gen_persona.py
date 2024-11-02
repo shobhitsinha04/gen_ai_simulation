@@ -56,7 +56,7 @@ def gen_daily_activities(data, loc):
     daily_act = []
     for p in data:
         global_context = person_info_prompt(loc, p["name"], p["age"], p["gender"], p["occupation"], p["personality"]["ext"], p["personality"]["agr"], p["personality"]["con"], p["personality"]["neu"], p["personality"]["ope"])
-        msg = daily_activity_prompt()
+        msg = daily_activity_prompt(args.location)
         res = llm_generate(global_context, msg)
         daily_act.append(json.loads(res))
 
@@ -105,7 +105,7 @@ Output format: [{name, age, gender, occupation}, {...}, ...].
         potential_jobs = random.choices(fields, weights=weights, k=5)
         final_msg = msg + \
         "4. If the persona is employed, please pick one of the industry division from {}, and then assign the 'occupation' attribute of the persona \
-to be the picked industry division. e.g. {{\"name\": ..., \"age\": ..., \"gender\": ..., \"occupation\": \"Manufacturing\"}}\n".format(potential_jobs) + \
+to be the picked industry division. e.g. {{\"name\": Hikaru Satou, \"age\": 29, \"gender\": female, \"occupation\": \"Manufacturing\"}}\n".format(potential_jobs) + \
         "5. When generating personas, don't have to always include student, retiree or unemployed people. \
 Generate persona based on the distribution of population, and the age and sex of the persona." + ans_format
 
@@ -149,7 +149,6 @@ Generate persona based on the distribution of population, and the age and sex of
                 personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
             elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
                 personas[i]["work"] = gen_random_workplace_TKY(personas[i]["occupation"])
-            
 
     with open('res/personas.json','w+') as f3:
         json.dump(personas, f3)
