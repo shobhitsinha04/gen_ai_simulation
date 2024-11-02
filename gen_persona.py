@@ -10,10 +10,7 @@ from helper.prompt import person_info_prompt, daily_activity_prompt
 def gen_random_trait(mean, std):
     return np.random.normal(loc=mean, scale=std)
 
-def gen_random_personality():
-    f = open("data/big5.json")
-    data = json.load(f)
-
+def gen_random_personality(data):
     personality = {}
 
     for key, val in data.items():
@@ -61,8 +58,13 @@ if __name__ == '__main__':
     # parser.add_argument('--mode_choice', default = 'realRatio', type=str)  # realRatio
     args = parser.parse_args()
 
+    if (args.location == 'Sydney'):
+        f_path = 'data/SYD'
+    else:
+        f_path = 'dara/TKY'
+
     msg = ""
-    f1 = open("data/population.json")
+    f1 = open("{}/population.json".format(f_path))
     data = json.load(f1)
 
     occ_data = data['occupation']
@@ -121,15 +123,18 @@ which means DON'T include the division name in the occupation value. e.g. {{\"na
         personas.extend(res)
 
     # Finialise personality
-    homes = open('data/home.json')
-    hdata = json.load(homes)
+    big5 = open("{}/big5.json".format(f_path))
+    big5_data = json.load(big5)
     for p in personas:
-        p["personality"] = gen_random_personality()
+        p["personality"] = gen_random_personality(big5_data)
 
     # Generate act-loc list for each persona
     daily_act = gen_daily_activities(personas, args.location)
     with open('res/activities.json','w+') as f2:
         json.dump(daily_act, f2)
+
+    homes = open('data/home.json') # TODO: residental places
+    hdata = json.load(homes)
 
     csv = pd.read_csv('data/around_unsw.csv')
     for i in range(len(personas)):

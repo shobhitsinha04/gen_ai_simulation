@@ -72,7 +72,6 @@ if __name__ == '__main__':
     topk_counter = load_topk()
     densmap = rcmd.read_densmaps()
 
-
     f1 = open("res/personas.json")
     p = json.load(f1)
     freq_counter = init_freq_count()
@@ -148,7 +147,11 @@ Each activity in your daily activity dictionary is given in the format 'activity
                         name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
                     else:
                         recommandation = memory_module.generate_recommendation(str(i), res)
-                        name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                        if (args.location == 'Sydney'):
+                            name, coord, min = memory_module.generate_choice(res, recommandation, 'data/SYD/around_unsw.csv') # [name, coord, time (int)]
+                        else:
+                            # TODO: change to POI data
+                            name, coord, min = memory_module.generate_choice(res, recommandation, 'data/SYD/around_unsw.csv') # [name, coord, time (int)]
                     
                     res.append(name)
                     res.append(coord)
