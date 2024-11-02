@@ -1,18 +1,34 @@
-import pickle
+import pickle as pkl
 import json
+import os
 from densmapClass import * 
 import numpy as np
 import pandas as pd
 
-with open('dict.txt', 'r') as f:
-    tag_dict = json.load(f)
 
-tag_dict = eval(str(tag_dict))
+# # get current absolute path
+# abs_file_path = os.path.abspath(__file__)
+# # get current work directory path
+# current_dir = os.path.dirname(__file__)
+# # get parent directory path
+# parent_dir = os.path.dirname(os.path.dirname(__file__))
+# path = parent_dir+'\\POI_data\\'
+# with open(path+ 'cat_map', 'r') as f:
+#     tag_dict = json.load(f)
 
-def read_densmaps():
+# tag_dict = eval(str(tag_dict))
+
+def read_densmaps(path = None):
+    # get parent directory path
+    if path == None:
+        # get parent directory path
+        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        path = os.path.join(parent_dir, 'POI_data', 'densMaps.pkl')
+    else:
+        path = os.path.join(parent_dir,'densMaps.pkl')
     try:
-        with open('dest_phy\densMaps.json', 'rb') as f:
-            densmaps= json.load(f)
+        with open(path, 'rb') as f:
+            densmaps= pkl.load(f)
     except FileNotFoundError:
         print("Density Matrix File doesn't exsit, run gen_densMatrix First")
         return FileNotFoundError("Density Matrix File is missing") 
@@ -25,10 +41,10 @@ def calculate_weight(row,densmap,user_loc):
     return densmap[x, y] / (dist ** 1.5)
 
 
-with open('densMaps.pkl', 'rb') as file:
-    densmap = pickle.load(file)
+# with open(paht+ 'densMaps.pkl', 'rb') as file:
+#     densmap = pickle.load(file)
 
-print(densmap.locO)
+# print(densmap.locO)
 
 '''
  old recommend function
@@ -48,13 +64,21 @@ def recommend(user_loc, activity, densmap, model='gravity'):
 '''
 
 
-def recommend(user_loc, activity, densmap, model='gravity'):
+def recommend(user_loc, activity, densmap, model='gravity',path = None):
     tag = activity[1]
+
+    if path == None:
+        # get parent directory path
+        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
+     else:
+        path = os.path.join(parent_dir,tag+'_ca_poi.csv')
+
+
     
     if model == 'gravity':
         dens_matrix = densmap[tag]
-        poi_set = pd.read_csv(tag+'_ca_poi.csv')
-        
+        poi_set = pd.read_csv(path)
         
         candidate = compute_weight_gravity(user_loc, dens_matrix, poi_set)
         
