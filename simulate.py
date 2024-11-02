@@ -3,8 +3,12 @@ import datetime
 import re
 import json
 
+import recommend as rcmd
 from utils import llm_generate, gen_person_info
 from mem_module_upgraded import MemoryModule
+from topk_lossy_count import *
+
+
 
 def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
@@ -93,10 +97,13 @@ if __name__ == '__main__':
     # TODO: 5. Load mem files into memory
     memory_module = MemoryModule()
     memory_module.load_memory_from_file()
+    topk_counter = load_topk()
+    densmap = rcmd.read_densmaps()
+
 
     f1 = open("res/personas.json")
     p = json.load(f1)
-
+    freq_counter = init_freq_count()
     date = args.date
     if (not date):
         date = datetime.datetime.today().strftime("%d-%m-%Y")
@@ -160,10 +167,17 @@ Each activity in your daily activity dictionary is given in the format 'activity
                     res = gen_next_motivation(context, cur_routine, [], date, weekday, time)
 
                 # Check if home/workplace/education
+                # TODO: Divide and conquer 
                 if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
                     # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
                     recommandation = memory_module.generate_recommendation(str(i), res)
-                    name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                    # name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
+                    # TODO another model 'mix', add arg
+                    # TODO check: is the user location (previous) correct
+                    user_loc = cur_routine[-1][-1]
+                    name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
+                    # TODO: miss min
+                    
                     res.append(name)
                     res.append(coord)
                     res[2][1] = time_update(res[2][1], min)
@@ -210,6 +224,7 @@ Each activity in your daily activity dictionary is given in the format 'activity
                 # Checking if 7 days have passed to generate a weekly summary
                 if memory_module.day_counters[persona_id] % 7 == 0:
                     memory_module.summarize_week(persona_id, date)
+        update_topk(topk_counter, mem_res, personpersona_data = p)
 
         memory_module.summarize_month(i, date)
 
@@ -218,3 +233,4 @@ Each activity in your daily activity dictionary is given in the format 'activity
 
     # TODO: 4. Store the memory into files
     memory_module.store_memory_to_file()
+    save_topk(topk_counter)
