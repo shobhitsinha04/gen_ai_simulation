@@ -35,7 +35,7 @@ def gen_random_place_SYD(csv):
     ran_p = csv.sample(n=1)
     return [ran_p['Latitude'].values[0], ran_p['Longitute'].values[0]]
 
-def gen_random_school_TKY(csv, school: str):
+def gen_random_school_TKY(school: str):
     data = open('POI_data/{}_ca_poi.csv'.format(school)) 
     schools = pd.read_csv(data)
 
@@ -129,25 +129,21 @@ Generate persona based on the distribution of population, and the age and sex of
     with open('res/activities.json','w+') as f2:
         json.dump(daily_act, f2)
 
-    csv_work = ''
-    csv_school = ''
     if (args.location == 'Sydney'):
-        csv_work = pd.read_csv('data/SYD/around_unsw.csv')
-        csv_school = csv_work
+        csv = pd.read_csv('data/SYD/around_unsw.csv')
         homes = open('data/SYD/home.json') 
         hdata = json.load(homes)
+
+        for i in range(len(personas)):
+            personas[i]["home"] = gen_random_home_SYD(hdata)
+            if (personas[i]["occupation"] == "student"):
+                personas[i]["school"] = gen_random_school_SYD(csv, daily_act[i]["education"][1][0])
+            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
+                personas[i]["work"] = gen_random_place_SYD(csv)
     else:
         homes = open('POI_data/Home_ca_poi.csv') 
         hdata = pd.read_csv(homes)
-    
-    for i in range(len(personas)):
-        if (args.location == 'Sydney'):
-            personas[i]["home"] = gen_random_home_SYD(hdata)
-            if (personas[i]["occupation"] == "student"):
-                personas[i]["school"] = gen_random_school_SYD(csv_school, daily_act[i]["education"][1][0])
-            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
-                personas[i]["work"] = gen_random_place_SYD(csv_work)
-        else:
+        for i in range(len(personas)):
             personas[i]["home"] = gen_random_place_TKY(hdata)
             if (personas[i]["occupation"] == "student"):
                 personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
