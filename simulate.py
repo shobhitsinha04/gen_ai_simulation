@@ -4,11 +4,10 @@ import re
 import json
 
 import recommend as rcmd
-from utils import llm_generate, gen_person_info
+from helper.utils import llm_generate
+from helper.prompt import gen_person_info
 from mem_module_upgraded import MemoryModule
 from topk_lossy_count import *
-
-
 
 def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
@@ -87,7 +86,12 @@ parser = argparse.ArgumentParser(description='genMotivation')
 # parser.add_argument('-a', action='store_true') # Generate activity list for each persona
 parser.add_argument('-d', '--date', type=validate_date, help="Date in the format dd-mm-yyyy")
 parser.add_argument('-n', '--num_of_days', type=int, default=1, help="Number of days to simulate")
-parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
+parser.add_argument('--location', choices=['Sydney', 'Tokyo'], default='Tokyo', 
+    help="Choose location: either 'Sydney' or 'Tokyo'", type=str)
+parser.add_argument('-m', "--model", choices=['physical', 'physical_mix', 'llm'], default='llm',
+    help="Specify the model type to use: 'physical', 'physical_mix' or 'llm'", type=str)
+
+# parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
 # parser.add_argument('--model', default = '...', type=str)
 # parser.add_argument('--population', default = 'population.json', type=str)
 # parser.add_argument('--mode_choice', default = 'realRatio', type=str)  # realRatio
@@ -150,7 +154,7 @@ if __name__ == '__main__':
                 mem = 'No historical data available.'
 
             # Prepare prompt
-            context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
+            context = gen_person_info(args.location, p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
             context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
 Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])

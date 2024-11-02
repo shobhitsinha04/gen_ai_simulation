@@ -4,7 +4,8 @@ import numpy as np
 import json
 import random
 
-from utils import llm_generate, gen_person_info, random_in_quad
+from helper.utils import llm_generate, random_in_quad
+from helper.prompt import gen_person_info
 
 act_loc = {
     "work": ["Workplace"],
