@@ -5,25 +5,36 @@ import numpy as np
 import json
 import time
 import pickle as pkl
+import os
 from densmapClass import *
 
 
 
-        
+
 ###############################
 # ----- read data （待改动）----#
 ###############################
 # TODO change path
-path = 'POI_data\\'
+
+# get current absolute path
+# abs_file_path = os.path.abspath(__file__)
+# get current work directory path
+# current_dir = os.path.dirname(__file__)
+# get parent directory path
+parent_dir = os.path.dirname(os.path.dirname(__file__))
+path = os.path.join(parent_dir,'POI_data','TKY_POIs.csv')
 column_names = ['ID',  'Category','lat', 'lng',]
-PoiData = pd.read_csv(path+'TKY_POIs.csv',header=None, names=column_names,skiprows=1)
+PoiData = pd.read_csv(path,header=None, names=column_names,skiprows=1)
 
 ###############################################
 #               tag file 待改动              #
 ###############################################
 
 # TODO change path
-with open(path+'cat_map.json', 'r') as f:
+parent_dir = os.path.dirname(os.path.dirname(__file__))
+path = os.path.join(parent_dir,'POI_data','cat_map,json')
+
+with open(path, 'r') as f:
     tag_dict = json.load(f)
 
 tag_dict = eval(str(tag_dict))
@@ -63,8 +74,10 @@ for tag in list(tag_dict):
     # time4 = time.time()
     # print(f"time 3-4(计算densmap): {format_time(time4-time3)}")
 
-# TODO 存储路径待改动    
-with open(path + 'densMaps.pkl', 'wb') as f:
+# TODO 存储路径待改动  
+parent_dir = os.path.dirname(os.path.dirname(__file__))
+path = os.path.join(parent_dir,'POI_data','densMaps.pkl')  
+with open(path, 'wb') as f:
     pkl.dump(densmap_instance, f)
 
 end_time = time.time()

@@ -1,15 +1,27 @@
 import json
 
-def load_topk():
+def load_topk(path = None):
+    if path == None:
+        # get parent directory path
+        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        path = os.path.join(parent_dir, 'POI_data', 'topk.json')
+    else:
+        path = os.path.join(path,'topk.json')
     try:
-        with open('data/topk.json', 'r') as f:
+        with open(path, 'r') as f:
             topk_counter= json.load(f)
     except FileNotFoundError:
         topk_counter = {}
     return topk_counter
 
-def save_topk(topk):
-    with open('data/topk.json', 'w') as f:
+def save_topk(topk,path = None):
+    if path == None:
+        # get parent directory path
+        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        path = os.path.join(parent_dir, 'POI_data', 'topk.json')
+    else:
+        path = os.path.join(path,'topk.json')
+    with open(path, 'w') as f:
         json.dump(topk, f)
 
 def update_topk(topk_counter, daily_activities, bucket_size==5, persona_data=None):
