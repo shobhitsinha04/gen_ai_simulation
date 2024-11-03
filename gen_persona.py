@@ -7,6 +7,13 @@ import random
 from helper.utils import llm_generate, random_in_quad
 from helper.prompt import person_info_prompt, daily_activity_prompt, persona_prompt
 
+occupation = ["Agriculture and forestry", "Fisheries", "Mining and quarrying of stone and gravel", "Construction", 
+    "Manufacturing", "Electricity, gas, heat supply and water", "Information and communications", "Transport and postal activities", 
+    "Wholesale and retail trade", "Finance and insurance", "Real estate and goods rental and leasing", "Scientific research, professional and technical services", 
+    "Accommodations, eating and drinking services", "Living-related and personal services and amusement services", "Education, learning support", 
+    "Medical, health care and welfare", "Compound services", "Services, N.E.C.", "Government, except elsewhere classified", "Other industries", 
+    "student", "unemployed", "retiree"]
+
 act_loc = {
     "work": ["Workplace"],
     "go home": ["Home"],
@@ -55,10 +62,13 @@ def gen_random_school_TKY(school: str):
 
     return gen_random_place_TKY(schools)
 
-def gen_random_workplace_TKY(industry: str):
-    data = open('POI_data/Workplace/{}_ca_poi.csv'.format(industry)) 
+def gen_random_workplace_TKY(occ: str):
+    if occ == 'student':
+        data = open('POI_data/Workplace/Wholesale and retail trade_ca_poi.csv') 
+    else:
+        data = open('POI_data/Workplace/{}_ca_poi.csv'.format(occ)) 
+    
     workplaces = pd.read_csv(data)
-
     return gen_random_place_TKY(workplaces)
 
 def gen_random_place_TKY(csv):
@@ -66,15 +76,32 @@ def gen_random_place_TKY(csv):
     ran_p = csv.sample(n=1)
     return [ran_p['lat'].values[0], ran_p['lng'].values[0]]
 
-def cleanup_persona_data(personas):
-    # TODO
-    return personas
-
-def cleanup_activity_data(activities):
+def cleanup_persona_data(personas: list[dict[str, str]]):
     res = []
-    for a in activities:
+    for p in personas:
+        if p['occupation'] in occupation:
+            res.append(p)
+            continue
+
+        persona = p.copy()
+        found = False
+        for occ in occupation:
+            if p['occupation'].lower() == occ.lower() or (p['occupation'].lower() in occ.lower() and len(p['occupation']) >= 4):
+                persona['occupation'] = occ
+                found = True
+        
+        if not found:
+            persona['occupation'] = 'unemployed'
+        
+        res.append(persona)
+
+    return res
+
+def cleanup_activity_data(personas, activities):
+    res = []
+    for i in range(len(activities)):
         std_act = {}
-        for act_key, act_val in a.items():
+        for act_key, act_val in activities[i].items():
             matched_key = None
             for loc_key in act_loc.keys():
                 if act_key.lower() == loc_key.lower() or (act_key.lower() in loc_key.lower() and len(act_key) >= 4):
@@ -85,8 +112,10 @@ def cleanup_activity_data(activities):
                 continue
 
             potential_loc = act_val[1]
-            if matched_key == 'religious activities' and len(potential_loc) > 1:
+            if (matched_key == 'religious activities' or matched_key == 'education') and len(potential_loc) > 1:
                 potential_loc = potential_loc[:1]
+            elif matched_key == 'work' and (personas[i]['occupation'] == 'unemployed' or personas[i]['occupation'] == 'retiree' or int(personas[i]['age']) < 15):
+                continue
             elif not potential_loc:
                 continue
 
@@ -97,8 +126,7 @@ def cleanup_activity_data(activities):
                     if location.lower() == loc_list.lower() or (location.lower() in loc_list.lower() and len(location) >= 4):
                         matched_location = loc_list
                         break
-                
-                # Add the standardized location name if matched, otherwise, skip it
+
                 if matched_location:
                     std_loc.append(matched_location)
 
@@ -126,7 +154,7 @@ def gen_daily_activities(data, loc):
         
         daily_act.append(parsed_json)
     
-    return cleanup_activity_data(daily_act)
+    return cleanup_activity_data(data, daily_act)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='genPersona')
@@ -134,7 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--number', type=int, default=1, help="Amount of personas to generate (1 for 5)") # Include relationship between agents
     parser.add_argument('--location', choices=['Sydney', 'Tokyo'], default='Tokyo', 
         help="Choose location: either 'Sydney' or 'Tokyo'", type=str)
-    parser.add_argument('-a', '--activity', help="Only generate activity list for existing personas") # Include relationship between agents
+    parser.add_argument('-a', '--activity', action='store_true', help="Only generate activity list for existing personas") # Include relationship between agents
     args = parser.parse_args()
 
     if (args.location == 'Sydney'):
@@ -177,8 +205,6 @@ to be the picked industry division. e.g. {{\"name\": Hikaru Satou, \"age\": 29, 
             "5. When generating personas, don't have to always include student, retiree or unemployed people. \
 Generate persona based on the distribution of population, and the age and sex of the persona." + ans_format
 
-            # print("Final msg: " + final_msg)
-
             print("=== Round {}: Waiting for LLAMA ===".format(i+1))
 
             while True:
@@ -201,6 +227,9 @@ Generate persona based on the distribution of population, and the age and sex of
 
         with open('res/personas.json','w+') as f3:
             json.dump(personas, f3)
+    else:
+        f = open("res/personas.json", 'r')
+        personas = json.load(f)
 
     # Generate act-loc list for each persona
     daily_act = gen_daily_activities(personas, args.location)
@@ -227,7 +256,8 @@ Generate persona based on the distribution of population, and the age and sex of
             personas[i]["home"] = gen_random_place_TKY(hdata)
             if (personas[i]["occupation"] == "student"):
                 personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
-            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
+            
+            if ('work' in daily_act[i]):
                 personas[i]["work"] = gen_random_workplace_TKY(personas[i]["occupation"])
 
     with open('res/personas.json','w+') as f3:
