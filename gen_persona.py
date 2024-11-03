@@ -162,7 +162,10 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--number', type=int, default=1, help="Amount of personas to generate (1 for 5)") # Include relationship between agents
     parser.add_argument('--location', choices=['Sydney', 'Tokyo'], default='Tokyo', 
         help="Choose location: either 'Sydney' or 'Tokyo'", type=str)
-    parser.add_argument('-a', '--activity', action='store_true', help="Only generate activity list for existing personas") # Include relationship between agents
+    parser.add_argument('-a', '--activity', action='store_true', help="Only generate activity list for existing personas")
+    parser.add_argument('-p', '--persona', action='store_true', help="Only generate persona for existing personas")
+    parser.add_argument('-u', '--p_update', action='store_true', help="Only update loc in persona existing personas")
+
     args = parser.parse_args()
 
     if (args.location == 'Sydney'):
@@ -170,7 +173,7 @@ if __name__ == '__main__':
     else:
         f_path = 'data/TKY'
 
-    if not args.activity:
+    if not args.activity and not args.p_update:
         f1 = open("{}/population.json".format(f_path))
         data = json.load(f1)
 
@@ -228,37 +231,45 @@ Generate persona based on the distribution of population, and the age and sex of
         with open('res/personas.json','w+') as f3:
             json.dump(personas, f3)
     else:
+        print("=== Load Existing Personas ===")
         f = open("res/personas.json", 'r')
         personas = json.load(f)
 
-    # Generate act-loc list for each persona
-    daily_act = gen_daily_activities(personas, args.location)
-    with open('res/activities.json','w+') as f2:
-        print("=== Activity Output ===")
-        print(daily_act)
-        json.dump(daily_act, f2)
+    if not args.persona and not args.p_update:
+        # Generate act-loc list for each persona
+        daily_act = gen_daily_activities(personas, args.location)
+        with open('res/activities.json','w+') as f2:
+            print("=== Activity Output ===")
+            print(daily_act)
+            json.dump(daily_act, f2)
+    elif not args.persona:
+        print("=== Load Existing Act Lists ===")
+        f = open("res/activities.json", 'r')
+        personas = json.load(f)
 
-    if (args.location == 'Sydney'):
-        csv = pd.read_csv('data/SYD/around_unsw.csv')
-        homes = open('data/SYD/home.json') 
-        hdata = json.load(homes)
+    if not args.persona:
+        print("=== Completing Personas ===")
+        if (args.location == 'Sydney'):
+            csv = pd.read_csv('data/SYD/around_unsw.csv')
+            homes = open('data/SYD/home.json') 
+            hdata = json.load(homes)
 
-        for i in range(len(personas)):
-            personas[i]["home"] = gen_random_home_SYD(hdata)
-            if (personas[i]["occupation"] == "student"):
-                personas[i]["school"] = gen_random_school_SYD(csv, daily_act[i]["education"][1][0])
-            elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
-                personas[i]["work"] = gen_random_place_SYD(csv)
-    else:
-        homes = open('POI_data/Home_ca_poi.csv') 
-        hdata = pd.read_csv(homes)
-        for i in range(len(personas)):
-            personas[i]["home"] = gen_random_place_TKY(hdata)
-            if (personas[i]["occupation"] == "student"):
-                personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
-            
-            if ('work' in daily_act[i]):
-                personas[i]["work"] = gen_random_workplace_TKY(personas[i]["occupation"])
+            for i in range(len(personas)):
+                personas[i]["home"] = gen_random_home_SYD(hdata)
+                if (personas[i]["occupation"] == "student"):
+                    personas[i]["school"] = gen_random_school_SYD(csv, daily_act[i]["education"][1][0])
+                elif (personas[i]["occupation"] != "unemployed" and personas[i]["occupation"] != "retiree"):
+                    personas[i]["work"] = gen_random_place_SYD(csv)
+        else:
+            homes = open('POI_data/Home_ca_poi.csv') 
+            hdata = pd.read_csv(homes)
+            for i in range(len(personas)):
+                personas[i]["home"] = gen_random_place_TKY(hdata)
+                if (personas[i]["occupation"] == "student"):
+                    personas[i]["school"] = gen_random_school_TKY(daily_act[i]["education"][1][0])
+                
+                if ('work' in daily_act[i]):
+                    personas[i]["work"] = gen_random_workplace_TKY(personas[i]["occupation"])
 
     with open('res/personas.json','w+') as f3:
         json.dump(personas, f3)

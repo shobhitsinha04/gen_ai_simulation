@@ -13,6 +13,7 @@ def find_age_bracket(age):
 # Function to calculate percentage and personality averages
 def calculate_statistics(data):
     total_population = len(data)
+    print("Total Population is {}.".format(total_population))
     
     # Initialize counters and accumulators
     age_gender_count = {}
