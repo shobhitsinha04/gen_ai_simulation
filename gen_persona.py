@@ -4,7 +4,7 @@ import numpy as np
 import json
 import random
 
-from helper.utils import llm_generate, random_in_quad
+from helper.utils import llama_generate, random_in_quad
 from helper.prompt import person_info_prompt, daily_activity_prompt, persona_prompt
 
 occupation = ["Agriculture and forestry", "Fisheries", "Mining and quarrying of stone and gravel", "Construction", 
@@ -145,7 +145,7 @@ def gen_daily_activities(data, loc):
         msg = daily_activity_prompt(act_loc, args.location)
 
         while True:
-            res = llm_generate(global_context, msg)
+            res = llama_generate(global_context, msg)
             try:
                 parsed_json = json.loads(res)
                 break
@@ -211,7 +211,7 @@ Generate persona based on the distribution of population, and the age and sex of
             print("=== Round {}: Waiting for LLAMA ===".format(i+1))
 
             while True:
-                res = llm_generate(context, final_msg)
+                res = llama_generate(context, final_msg)
                 try:
                     print("Persona it {}:\noutput: {}".format(i, res))
                     res = json.loads(res)
