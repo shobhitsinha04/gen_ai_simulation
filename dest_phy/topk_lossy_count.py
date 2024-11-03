@@ -1,3 +1,4 @@
+import os
 import json
 
 def load_topk(path = None):
@@ -24,7 +25,7 @@ def save_topk(topk,path = None):
     with open(path, 'w') as f:
         json.dump(topk, f)
 
-def update_topk(topk_counter, daily_activities, bucket_size==5, persona_data=None):
+def update_topk(topk_counter, daily_activities, bucket_size=5, persona_data=None):
     """
     Update top-k frequent locations using Lossy Counting algorithm
     

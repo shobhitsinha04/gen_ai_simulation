@@ -1,7 +1,7 @@
 import pickle as pkl
 import json
 import os
-from dest_phy.densmapClass import *
+from densmapClass import *
 import numpy as np
 import pandas as pd
 
@@ -22,7 +22,8 @@ def read_densmaps(path = None):
     # get parent directory path
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        # parent_dir = os.path.dirname(os.path.dirname(__file__))
+        parent_dir = os.path.dirname(__file__)
         path = os.path.join(parent_dir, 'POI_data', 'densMaps.pkl')
     else:
         path = os.path.join(parent_dir,'densMaps.pkl')
@@ -38,7 +39,7 @@ def calculate_weight(row,densmap,user_loc):
     x = row['xIndex']
     y = row['yIndex']
     dist = geodesic(user_loc, (row['lat'], row['lng'])).m
-    return densmap[x, y] / (dist ** 1.5)
+    return densmap[x, y] / ((dist+100) ** 1.5)
 
 
 # with open(paht+ 'densMaps.pkl', 'rb') as file:
@@ -69,7 +70,8 @@ def recommend(user_loc, activity, densmap, model='gravity',path = None):
 
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        # parent_dir = os.path.dirname(os.path.dirname(__file__))
+        parent_dir = os.path.dirname(__file__)
         path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
     else:
         path = os.path.join(parent_dir,tag+'_ca_poi.csv')
