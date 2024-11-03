@@ -64,7 +64,8 @@ Note:
 2. The location list for each chosen activity cannot be empty.
 3. The location list of an activity should be ordered in possibility of going to the location. For example, if a person's location list for "meal" is ["home", "cafe"], \
 and they have their meals in cafe more often, then the location list should be ["cafe", "home"].
-4. Only people that have a job are allowed to have activity "work". People who are students should have activity "education" but not "work".
+4. Only people from 15 to 64 are allowed to have activity "work". People who are students should have activity "education". Only a limited amount of students get a job, \
+and most of these jobs are part-time. Hence, if a student get a 'work' activity, their 'work' activity is likely to have a low frequency.
 5. People should all have activities "sleep", "meal" and "go home".
 6. Children can go to preschools between the ages of 4 to 6. At the age of 6, children has to start primary school.
 7. An persona may or may not have a "religious activities". But if they has one, they must have one and only one location cateory for their "religious activities".
