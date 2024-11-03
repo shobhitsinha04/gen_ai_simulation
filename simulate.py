@@ -3,9 +3,12 @@ import datetime
 import re
 import json
 
-import dest_phy.recommend as rcmd
+# import dest_phy.recommend as rcmd
+# from dest_phy.densmapClass import *
+from densmapClass import *
+import recommend as rcmd
 from dest_phy.topk_lossy_count import *
-from helper.utils import llm_generate, mem_retrieval
+from helper.utils import llama_generate, gpt_generate, mem_retrieval
 from helper.prompt import person_info_prompt, next_motivation_prompt
 from mem_module_upgraded import MemoryModule
 
@@ -45,10 +48,39 @@ def time_update(curr_time: str, min: int):
     new_time = time_obj + datetime.timedelta(minutes=min)
     return new_time.strftime(format)
 
-def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
+def valid_mot(data):
+    return isinstance(data, list) and len(data) == 3 and isinstance(data[0], str) and isinstance(data[1], str)\
+        and isinstance(data[2], list) and len(data[2]) == 2 and all(isinstance(item, str) for item in data[2])
+
+def gen_next_motivation(llm: str, context: str, pre_mot, mem, date: str, weekday: str, time: str):
     msg = next_motivation_prompt(pre_mot, mem, date, weekday, time)
-    res = llm_generate(context, msg)
-    return json.loads(res)
+    print("===msg===")
+    print(msg)
+    while True:
+        if llm == 'llama':
+            print("--- llama ---")
+            res = llama_generate(context, msg)
+        else:
+            print("--- gpt ---")
+            res = gpt_generate(context, msg)
+        
+        print(res)
+        try:
+            parsed_json = json.loads(res)
+            if valid_mot(parsed_json):
+                break
+            else:
+                if (valid_mot(parsed_json[0])):
+                    parsed_json = parsed_json[0]
+                    print("Invalid Format received, fixed...")
+                    break
+                else:
+                    print("Invalid Format received, retrying...")
+
+        except json.JSONDecodeError:
+            print("Invalid JSON received, retrying...")
+            
+    return parsed_json
 
 parser = argparse.ArgumentParser(description='genMotivation')
 # parser.add_argument('-a', action='store_true') # Generate activity list for each persona
@@ -58,9 +90,10 @@ parser.add_argument('--location', choices=['Sydney', 'Tokyo'], default='Tokyo',
     help="Choose location: either 'Sydney' or 'Tokyo'", type=str)
 parser.add_argument('-m', "--model", choices=['physical', 'physical_mix', 'llm'], default='llm',
     help="Specify the model type to use: 'physical', 'physical_mix' or 'llm'", type=str)
+parser.add_argument('-l', "--llm", choices=['llama', 'gpt'], default='llama',
+    help="Specify the model type to use: llama or gpt", type=str)
 
 # parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
-# parser.add_argument('--model', default = '...', type=str)
 # parser.add_argument('--population', default = 'population.json', type=str)
 # parser.add_argument('--mode_choice', default = 'realRatio', type=str)  # realRatio
 args = parser.parse_args()
@@ -74,7 +107,7 @@ if __name__ == '__main__':
 
     f1 = open("res/personas.json")
     p = json.load(f1)
-    freq_counter = init_freq_count()
+    # freq_counter = init_freq_count()
     date = args.date
     if (not date):
         date = datetime.datetime.today().strftime("%d-%m-%Y")
@@ -106,12 +139,12 @@ if __name__ == '__main__':
 Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])
             
+            print("=== Day {} Person {} ===\n".format(num, i))
             # Generate routine
             while (not check_routine_finished(time)):
-                print(i)
-                print(time)
+                print("=== Person {}, now is {} ===".format(i, time))
                 # This is the loop that generate one day routine activity by activity (for one person)
-                res = gen_next_motivation(context, cur_routine, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
+                res = gen_next_motivation(args.llm, context, cur_routine, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
 
                 while (not valid_time(res[2][1])):
                     # Check if llm generates invalid time
@@ -122,16 +155,16 @@ Each activity in your daily activity dictionary is given in the format 'activity
                     if (args.model == 'physical' or args.model == 'physical_mix') :
                         # TODO another model 'mix', add arg
                         # TODO check: is the user location (previous) correct
-                        # TODO: miss min
                         user_loc = cur_routine[-1][-1]
                         name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
+                        # TODO: update time
+                        min = 15
                     else:
                         recommandation = memory_module.generate_recommendation(str(i), res)
                         if (args.location == 'Sydney'):
-                            name, coord, min = memory_module.generate_choice(res, recommandation, 'data/SYD/around_unsw.csv') # [name, coord, time (int)]
+                            name, coord, min = memory_module.generate_choice(args.location, res, recommandation, "POI_data/POI_data/{}_ca_poi.csv".format(res[1])) # [id, coord, time (int)]
                         else:
-                            # TODO: change to POI data
-                            name, coord, min = memory_module.generate_choice(res, recommandation, 'data/SYD/around_unsw.csv') # [name, coord, time (int)]
+                            name, coord, min = memory_module.generate_choice(args.location, res, recommandation, 'data/TKY/around_unsw.csv') # [name, coord, time (int)]
                     
                     res.append(name)
                     res.append(coord)
