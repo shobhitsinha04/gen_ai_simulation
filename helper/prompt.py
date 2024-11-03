@@ -113,7 +113,7 @@ Requirements for routine generation:
 1. You must consider how your character attributes and personality may affect your activity and location selection.
 2. The next activity should start at now, which is {}.
 3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
-4. You must take your historical behaviours in to consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
+4. You must take your historical behaviours into consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
 by the activities done during the recent days.
 
 Note:

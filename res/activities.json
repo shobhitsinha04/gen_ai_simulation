@@ -1,30 +1,6 @@
 [
-    {"sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], 
-        "shopping": ["once a week", ["Grocery"]], "sports and exercise": ["once a week", ["Park"]], 
-        "leisure activities": ["everyday", ["Home", "Park", "Cinemas"]], 
-        "education": ["every workday", ["Primary and Secondary School"]]}, 
-    {"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], 
-        "leisure activities": ["everyday", ["Home", "Park"]], "medical treatment": ["once every two weeks", ["Clinic"]]}, 
-    {"sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home"]], 
-        "shopping": ["once a week", ["Grocery"]], "leisure activities": ["every other day", ["Home", "Park"]], 
-        "medical treatment": ["once every two weeks", ["Hospital"]]}, 
-    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], 
-        "eat": ["3 meals per day", ["Home", "Cafe", "Pub and bar", "Restaurant"]], 
-        "shopping": ["once a week", ["Grocery", "Other shopping"]], 
-        "sports and exercise": ["2-3 times a week", ["Gym", "Park"]], 
-        "leisure activities": ["1-2 times a week", ["Pub and bar", "Cinemas", "Park"]], 
-        "medical treatment": ["once every 3 months", ["Clinic"]], 
-        "trifles": ["once a month", ["Legal and Financial Service"]]}, 
-    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], 
-        "eat": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], 
-        "sports and exercise": ["twice a week", ["Gym", "Park"]], 
-        "leisure activities": ["every weekend", ["Home", "Park", "Stadium"]]}]
-    
-
-
-    {"sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "education": ["every workday", ["Primary and Secondary School"]], "sports and exercise": ["once a week", ["Gym"]], "leisure activities": ["every weekend", ["Home", "Park", "Cinemas"]], "trifles": ["once a month", ["Legal and Financial Service"]]}, 
-    {"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "education": ["everyday", ["Primary and Secondary School"]]}, 
-    {"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], "sports and exercise": ["once a week", ["Gym"]], "leisure activities": ["once a week", ["Cinemas", "Museum"]]}, 
-    {"sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["2 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], "sports and exercise": ["once a week", ["Park", "Gym"]], "leisure activities": ["every other day", ["Home", "Park"]]}, 
-    {"go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "education": ["every workday", ["University"]], "leisure activities": ["everyday", ["Park"]]}, 
-    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "eat": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], "sports and exercise": ["twice a week", ["Gym", "Park"]], "leisure activities": ["every weekend", ["Home", "Park", "Stadium"]]}]
+    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], "leisure activities": ["everyday", ["Home", "Entertainment"]], "sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]},
+    {"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["every weekends", ["Grocery"]], "leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "education": ["every workday", ["College and University"]]}, 
+    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], "leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}, 
+    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "shopping": ["once a week", ["Grocery"]], "leisure activities": ["everyday", ["Home", "Entertainment", "Drink and Dessert Shop"]], "sports and exercise": ["once a week", ["Gym", "Outdoors"]], "religious activities": ["every weekends", ["Temple"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}, 
+    {"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], "leisure activities": ["everyday", ["Home", "Entertainment", "Drink and Dessert Shop", "Pub and Bar"]], "sports and exercise": ["once a week", ["Gym"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}]

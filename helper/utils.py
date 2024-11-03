@@ -3,10 +3,12 @@ import torch
 import datetime
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from mem_module_upgraded import MemoryModule
+import openai
 
 model_name = "/mnt/data728/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct"
+openai.api_key = ''
 
-def llm_generate(context, msg):
+def llama_generate(context, msg):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -41,6 +43,22 @@ def llm_generate(context, msg):
 
     res = outputs[0][input_ids.shape[-1]:]
     return tokenizer.decode(res, skip_special_tokens=True)
+
+def gpt_generate(context, msg):
+    try: 
+        res = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": msg}
+            ],
+            max_tokens=200,
+        )
+    except openai.OpenAIError as e:
+        print(f"Error generating weekly summary: {e}")
+        return
+
+    return res['choices'][0]['message']['content'].strip()
 
 def random_in_quad(v1, v2, v3, v4):
     while True:
