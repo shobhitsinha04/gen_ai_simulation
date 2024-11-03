@@ -1,23 +1,9 @@
-act_loc = {
-    "work": ["Workplace"],
-    "go home": ["Home"],
-    "meal": ["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"],
-    "sleep": ["Home", "Hotel"],
-    "shopping": ["Grocery", "Other Shopping"],
-    "sports and exercise": ["Gym", "Field", "Outdoors"],
-    "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
-        "Library", "Drink and Dessert Shop", "Social Event"],
-    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool"],
-    "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
-    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
-}
-
-def persona_prompt(data, loc):
+def persona_prompt(loc, data):
     msg = ''
 
     # Include age distribution in the prompt
     for i in range(len(data['age'])):
-        msg += "The probability of males from age {} to {} is {}%, where females is {}. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
+        msg += "The probability of males from age {} to {} is {}%, where females is {}%. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
 
     # Include employment data in the prompt
     if loc == 'Sydney': 
@@ -25,10 +11,10 @@ def persona_prompt(data, loc):
     else:
         msg += persona_employ_TKY_prompt(data['employment'])
 
-    msg += """Please generate 5 independent personas and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
-"""
+    msg += """Please generate 5 independent personas in {} and output the person's name, age, gender and occupation in JSON format based on the given population distribution.
+""".format(loc)
     note = """Note:
-1. All students, including university students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
+1. All students, including college and university students, high school students, kids in kindergarten etc, shoudld all have occupation "student".
 2. Children can choose to start preschool at the age of 4, and must be in compulsory schooling by 6.
 3. Unemployed people (including young kids and old people) who are not student, can only have occupation "unemployed" or "retiree".
 """
@@ -36,7 +22,7 @@ def persona_prompt(data, loc):
 
 def persona_employ_SYD_prompt(data):
     # Include employment data in the prompt
-    msg = "\nTotal employment-to-population ratio for males is {}, for females is {}, where the ratio for males at working age (from 15 to 64 years old) is {}, for female is {}.\
+    msg = "\nThe employment-to-population ratio for males is {}, for females is {}, where the ratio for males at working age (from 15 to 64 years old) is {}, for female is {}.\
 The average age at retirement from labour force is {} years.\n"\
 .format(data['total'][0], data['total'][1], data['working_age'][0], data['working_age'][1], data['retirement'])
     
@@ -44,7 +30,7 @@ The average age at retirement from labour force is {} years.\n"\
 
 def persona_employ_TKY_prompt(data):
     # Include employment data in the prompt
-    msg = "\nTotal employment-to-population ratio for males is {}, for females is {}. The retirement age is {}.\n"\
+    msg = "\nThe employment-to-population ratio for males (from 15 to 64 years old) is {}, for females (from 15 to 64 years old) is {}. The retirement age is {}.\n"\
 .format(data['total'][0], data['total'][1], data['retirement'])
     
     return msg
@@ -63,7 +49,7 @@ Conversely, people low in this domain are often much more traditional and may st
 """.format(loc, name, age, gender, occ, ext, arg, con, neu, ope)
     return msg
 
-def daily_activity_prompt(loc):
+def daily_activity_prompt(act_loc, loc):
     if loc == 'Sydney':
         example = activity_eg_SYD()
     else:
@@ -81,32 +67,37 @@ and they have their meals in cafe more often, then the location list should be [
 4. Only people that have a job are allowed to have activity "work". People who are students should have activity "education" but not "work".
 5. People should all have activities "sleep", "meal" and "go home".
 6. Children can go to preschools between the ages of 4 to 6. At the age of 6, children has to start primary school.
-7. VET under education category stands for Vocational Education and Training.
+7. An persona may or may not have a "religious activities". But if they has one, they must have one and only one location cateory for their "religious activities".
 8. You are only allowed to choose some of the activities from the given common activity list. \
 The selected possible locations of each activity has to be picked from the possible location list of that activity.
 9. You must NOT include activities that the person would never participate in. For example, an unemployed person should not have activity "work" as an element.
-10. The strings for activity names and location categories are case-sensitive.
+10. The strings for activity names and location categories are case-sensitive. When generating activities and corresponding possible locations, the names of activities \
+and location categories should be excatly the same as provided activity list.
 Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2, ...]], activity 2: [...], ...}}.
 """ + example + """Important: You should always responds required data in json dictionary format, but without any additional introduction, text or explanation.
 """.format(str(act_loc))
     return msg
 
 def activity_eg_TKY():
-    return """Three examples outputs:
+    return """Five examples outputs:
 1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
-"leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}}
+"leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}}
 2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Outdoors"]], \
-"leisure activities": ["everyday", ["Entertainment", "Drink and Dessert Shop", "Pub and Bar", "Home", "Social Event"]], "education": ["every workday", ["Vocational Training"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
-3. {{"work": ["every workday", "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
-"leisure activities": ["everyday", ["Outdoors", "Home", "Social Event", "Entertainment", "Pub and Bar"]], "trifles": ["once every two weeks", ["Medical Service"]]}}\n"""
+"leisure activities": ["everyday", "Entertainment", "Drink and Dessert Shop", "Pub and Bar", "Home", "Art and Performance", "Social Event"]], "education": ["every workday", ["Vocational Training"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
+3. {{"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+"leisure activities": ["ever two days", ["Outdoors", "Home", "Social Event", "Entertainment", "Pub and Bar"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
+4. {{"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Casual Dining", "Cafe", "Pub and Bar"]], "sleep": ["everyday", ["Home"]], "shopping": ["once every two weeks", ["Other shopping"]], \
+"leisure activities": ["every week", ["Home", "Social Event", "Stadium", "Entertainment"]], "trifles": ["every week", ["Legal and Financial Service", "Medical Service", "Other Service"]]}}
+5. {{"go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors", "Field"]], \
+"leisure activities": ["everyday", ["Social Event", "Art and Performance", "Home", "Museum"]], "trifles": ["every Wednesday", ["Medical Service", "Other Service"]]}}\n"""
 
 def activity_eg_SYD():
     return """Three examples outputs:
 1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
-"sports and exercise": ["once a week", ["Gym"]], "religion": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
+"sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service"]]}}
 2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Field"]], \
 "education": ["every workday", ["VET"]], "medical treatment": ["once every two weeks", ["Dentist"]]}}
-3. {{"work": ["every workday", "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
+3. {{"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
 "leisure activities": ["everyday", ["Outdoors"]], "medical treatment": ["once every two weeks", ["Clinic"]]}}\n"""
 
 def next_motivation_prompt(pre_mot, mem, date: str, weekday: str, time: str):
