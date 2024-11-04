@@ -34,11 +34,11 @@ def llama_generate(context, msg):
 
     outputs = model.generate(
         input_ids,
-        max_new_tokens=256,
+        max_new_tokens=512,
         eos_token_id=terminators,
         do_sample=True,
-        temperature=0.6,
-        top_p=0.9,
+        temperature=1,
+        top_p=0.8,
     )
 
     res = outputs[0][input_ids.shape[-1]:]
@@ -52,7 +52,7 @@ def gpt_generate(context, msg):
                 {"role": "system", "content": context},
                 {"role": "user", "content": msg}
             ],
-            max_tokens=200,
+            max_tokens=512,
         )
     except openai.OpenAIError as e:
         print(f"Error generating weekly summary: {e}")

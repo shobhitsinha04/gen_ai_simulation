@@ -1,7 +1,9 @@
 res/routine*
 plots
 backup.txt
-eval/output_persona.json
+eval/gpt_persona.json
+eval/llama_output_persona.json
+eval/llama_persona.json
 data/TKY/population_backup.json
 
 __pycache__
