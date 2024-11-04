@@ -1,9 +1,9 @@
 def persona_prompt(loc, data):
-    msg = ''
+    msg = 'Among the total population, '
 
     # Include age distribution in the prompt
     for i in range(len(data['age'])):
-        msg += "The probability of males from age {} to {} is {}%, where females is {}%. ".format(i*5, i*5+4, data['age'][i]['male'], data['age'][i]['female'])
+        msg += "{}% are males aged {} to {}, while {}% are females in this age group. ".format(data['age'][i]['male'], i*5, i*5+4, data['age'][i]['female'])
 
     # Include employment data in the prompt
     if loc == 'Sydney': 
@@ -82,11 +82,11 @@ Answer in a dictionary format: {{activity 1: [frequency, [location 1, location 2
 def activity_eg_TKY():
     return """Five examples outputs:
 1. {{"work": ["every workday", ["Workplace"]], "sleep": ["everyday", ["Home"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Restaurant", "Cafe", "Home"]], "shopping": ["every weekends", ["Grocery"]], \
-"leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["once a month", ["Automotive Service", "Other Service"]]}}
+"leisure activities": ["everyday", ["Home"]], "sports and exercise": ["once a week", ["Gym"]], "religious activities": ["every weekends", ["Church"]], "trifles": ["twice a month", ["Automotive Service", "Other Service"]]}}
 2. {{"go home": ["everyday", ["Home"]], "sleep": ["everyday", ["Home"]], "meal": ["2 meals per day", ["Home", "Casual Dining"]], "shopping": ["twice a week", ["Grocery", "Other shopping"]], "sports and exercise": ["twice a week", ["Gym", "Outdoors"]], \
 "leisure activities": ["everyday", "Entertainment", "Drink and Dessert Shop", "Pub and Bar", "Home", "Art and Performance", "Social Event"]], "education": ["every workday", ["Vocational Training"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
 3. {{"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home", "Cafe"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors"]], \
-"leisure activities": ["ever two days", ["Outdoors", "Home", "Social Event", "Entertainment", "Pub and Bar"]], "trifles": ["once every two weeks", ["Medical Service", "Other Service"]]}}
+"leisure activities": ["ever two days", ["Outdoors", "Home", "Social Event", "Entertainment", "Pub and Bar"]], "trifles": ["once every two days", ["Medical Service", "Other Service"]]}}
 4. {{"work": ["every workday", ["Workplace"]], "go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Casual Dining", "Cafe", "Pub and Bar"]], "sleep": ["everyday", ["Home"]], "shopping": ["once every two weeks", ["Other shopping"]], \
 "leisure activities": ["every week", ["Home", "Social Event", "Stadium", "Entertainment"]], "trifles": ["every week", ["Legal and Financial Service", "Medical Service", "Other Service"]]}}
 5. {{"go home": ["everyday", ["Home"]], "meal": ["3 meals per day", ["Home"]], "sleep": ["everyday", ["Home"]], "shopping": ["once a week", ["Grocery", "Other shopping"]], "sports and exercise": ["everyday", ["Outdoors", "Field"]], \

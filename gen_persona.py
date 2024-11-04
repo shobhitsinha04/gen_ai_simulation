@@ -4,7 +4,7 @@ import numpy as np
 import json
 import random
 
-from helper.utils import llama_generate, random_in_quad
+from helper.utils import llama_generate, gpt_generate, random_in_quad
 from helper.prompt import person_info_prompt, daily_activity_prompt, persona_prompt
 
 occupation = ["Agriculture and forestry", "Fisheries", "Mining and quarrying of stone and gravel", "Construction", 
@@ -85,17 +85,29 @@ def cleanup_persona_data(personas: list[dict[str, str]]):
 
         persona = p.copy()
         found = False
+        print("start")
         for occ in occupation:
             if p['occupation'].lower() == occ.lower() or (p['occupation'].lower() in occ.lower() and len(p['occupation']) >= 4):
                 persona['occupation'] = occ
                 found = True
-        
+                break
+        print("end")
+        print(persona['occupation'])
+
         if not found:
             persona['occupation'] = 'unemployed'
         
         res.append(persona)
 
     return res
+
+def find_proper_school(age):
+    if age < 6:
+        return "Preschool"
+    elif age < 19:
+        return "Primary and Secondary School"
+    else:
+        return random.choice(["Vocational Training","College and University"])
 
 def cleanup_activity_data(personas, activities):
     res = []
@@ -113,7 +125,14 @@ def cleanup_activity_data(personas, activities):
 
             potential_loc = act_val[1]
             if (matched_key == 'religious activities' or matched_key == 'education') and len(potential_loc) > 1:
-                potential_loc = potential_loc[:1]
+                print("Wayyyy tooo much!")
+                print(potential_loc)
+                if matched_key == 'religious activities':
+                    potential_loc = [random.choice(potential_loc)]
+                else:
+                    potential_loc = [find_proper_school(int(personas[i]['age']))]
+                
+                print(potential_loc)
             elif matched_key == 'work' and (personas[i]['occupation'] == 'unemployed' or personas[i]['occupation'] == 'retiree' or int(personas[i]['age']) < 15):
                 continue
             elif not potential_loc:
@@ -129,29 +148,53 @@ def cleanup_activity_data(personas, activities):
 
                 if matched_location:
                     std_loc.append(matched_location)
+                else:    
+                    std_loc.append(random.choice(act_loc[matched_key]))
 
             if std_loc:
                 std_act[matched_key] = [act_val[0], std_loc]
+        
+        # Check for student:
+        if personas[i]['occupation'] == 'student' and 'education' not in std_act:
+            std_act['education'] = find_proper_school(int(personas[i]['age']))
+        
+        if 'sleep' not in std_act:
+            std_act['sleep'] = random.choice(["Home", "Hotel"])
+        
+        if 'meal' not in std_act:
+            num_items = random.choice([1, 2, 3, 4, 5])
+            std_act['meal'] = random.choice(["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"])
 
         if std_act:
             res.append(std_act)
 
     return res
 
-def gen_daily_activities(data, loc):
+def gen_daily_activities(llm, data, loc):
     daily_act = []
+    count = 0
     for p in data:
+        count += 1
+        print("=== Activity Generation Round {} ===".format(count))
         global_context = person_info_prompt(loc, p["name"], p["age"], p["gender"], p["occupation"], p["personality"]["ext"], p["personality"]["agr"], p["personality"]["con"], p["personality"]["neu"], p["personality"]["ope"])
         msg = daily_activity_prompt(act_loc, args.location)
 
         while True:
-            res = llama_generate(global_context, msg)
+            if llm == 'llama':
+                print("--- llama ---")
+                res = llama_generate(global_context, msg)
+            else:
+                print("--- gpt ---")
+                res = gpt_generate(global_context, msg)
+                res = res.replace("```json", "").replace("```", "").strip()
+
             try:
                 parsed_json = json.loads(res)
                 break
             except json.JSONDecodeError:
                 print("Invalid JSON received, retrying...")
         
+        print(parsed_json)
         daily_act.append(parsed_json)
     
     return cleanup_activity_data(data, daily_act)
@@ -165,6 +208,8 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--activity', action='store_true', help="Only generate activity list for existing personas")
     parser.add_argument('-p', '--persona', action='store_true', help="Only generate persona for existing personas")
     parser.add_argument('-u', '--p_update', action='store_true', help="Only update loc in persona existing personas")
+    parser.add_argument('-l', "--llm", choices=['llama', 'gpt'], default='llama',
+        help="Specify the model type to use: llama or gpt", type=str)
 
     args = parser.parse_args()
 
@@ -184,7 +229,8 @@ if __name__ == '__main__':
         msg = persona_prompt(args.location, data)
 
         ans_format = """Important: Output has to be a list of dictionary, where each dictionary has keys 'name', 'age', 'gender' and 'occupation'.
-Output format: [{name, age, gender, occupation}, {...}, ...].
+Output format: 
+[{name, age, gender, occupation}, {...}, ...].
 """
 
 #     example = """Example output 1:
@@ -195,7 +241,7 @@ Output format: [{name, age, gender, occupation}, {...}, ...].
 # {"name": "Lily O'Connor", "age": 59, "gender": "female", "occupation": "traffic controller"}, {"name": "Maxwell Rivera", "age": 36, "gender": "male", "occupation": "retail assistant"}, {"name": "Ella Winter", "age": 28, "gender": "female", "occupation": "research assistant"}]
 # """
 
-        context = "You are a json generator who always responds required data in json format, but without any additional introduction, text or explanation."
+        context = "You are a json generator who always responds required data in json format, but without any additional introduction, text or explanation. You output format has to be a list of dictionary."
 
         print("======== Start! ========")
         personas = []
@@ -204,14 +250,22 @@ Output format: [{name, age, gender, occupation}, {...}, ...].
             potential_jobs = random.choices(fields, weights=weights, k=5)
             final_msg = msg + \
             "4. If the persona is employed, please pick one of the industry division from {}, and then assign the 'occupation' attribute of the persona \
-to be the picked industry division. e.g. {{\"name\": Hikaru Satou, \"age\": 29, \"gender\": female, \"occupation\": \"Manufacturing\"}}\n".format(potential_jobs) + \
+to be the picked industry division. e.g. {{\"name\": Hikaru Satou, \"age\": 29, \"gender\": female, \"occupation\": \"Manufacturing\"}} \n\
+The occupation can only be assigned to one of the element in this industry division list, don't create a specific job for it. \n".format(potential_jobs) + \
             "5. When generating personas, don't have to always include student, retiree or unemployed people. \
 Generate persona based on the distribution of population, and the age and sex of the persona." + ans_format
 
             print("=== Round {}: Waiting for LLAMA ===".format(i+1))
 
             while True:
-                res = llama_generate(context, final_msg)
+                if args.llm == 'llama':
+                    print("--- llama ---")
+                    res = llama_generate(context, final_msg)
+                else:
+                    print("--- gpt ---")
+                    res = gpt_generate(context, final_msg)
+                    res = res.replace("```json", "").replace("```", "").strip()
+
                 try:
                     print("Persona it {}:\noutput: {}".format(i, res))
                     res = json.loads(res)
@@ -237,7 +291,7 @@ Generate persona based on the distribution of population, and the age and sex of
 
     if not args.persona and not args.p_update:
         # Generate act-loc list for each persona
-        daily_act = gen_daily_activities(personas, args.location)
+        daily_act = gen_daily_activities(args.llm, personas, args.location)
         with open('res/activities.json','w+') as f2:
             print("=== Activity Output ===")
             print(daily_act)
@@ -245,7 +299,7 @@ Generate persona based on the distribution of population, and the age and sex of
     elif not args.persona:
         print("=== Load Existing Act Lists ===")
         f = open("res/activities.json", 'r')
-        personas = json.load(f)
+        daily_act = json.load(f)
 
     if not args.persona:
         print("=== Completing Personas ===")
