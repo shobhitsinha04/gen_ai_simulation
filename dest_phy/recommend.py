@@ -71,7 +71,7 @@ def recommend(user_loc, activity, densmap, model='gravity',path = None):
         # get parent directory path
         parent_dir = os.path.dirname(os.path.dirname(__file__))
         path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
-     else:
+    else:
         path = os.path.join(parent_dir,tag+'_ca_poi.csv')
 
 
@@ -95,11 +95,11 @@ def recommend(user_loc, activity, densmap, model='gravity',path = None):
 
 def compute_weight_gravity(user_loc, dens_matrix, poi_set, r=10000):
     # 获取密度矩阵的大小
-    xSize, ySize = dens_matrix.shape
+    xSize, ySize = dens_matrix.densmap.shape
     
     # get user index
-    user_idx = (np.array(latlng2meter(densmap.locO,user_loc))//densmap.partitionSize).astype(int)
-    R = int(-((-r)//densmap.partitionSize))
+    user_idx = (np.array(latlng2meter(dens_matrix.locO,user_loc))//dens_matrix.partitionSize).astype(int)
+    R = int(-((-r)//dens_matrix.partitionSize))
     center = R//2
     R = center*2 + 1
     
@@ -140,7 +140,7 @@ def compute_weight_gravity(user_loc, dens_matrix, poi_set, r=10000):
     
     # 创建填充了0的完整大小流矩阵
     flow = np.zeros((R, R))
-    flow[x_slice_pot, y_slice_pot] = densmap.densmap[x_slice_dens, y_slice_dens]
+    flow[x_slice_pot, y_slice_pot] = dens_matrix.densmap[x_slice_dens, y_slice_dens]
     
     # 应用势能
     flow = flow * potential
@@ -176,7 +176,7 @@ def compute_weight_gravity(user_loc, dens_matrix, poi_set, r=10000):
     # 重置索引并计算权重
     candidate = candidate.reset_index(drop=True)
     candidate['weight'] = candidate.apply(
-        lambda x: calculate_weight(x, densmap.densmap, user_loc), 
+        lambda x: calculate_weight(x, dens_matrix.densmap, user_loc), 
         axis=1
     )
     
