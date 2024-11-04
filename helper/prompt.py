@@ -115,14 +115,18 @@ Requirements for routine generation:
 3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
 4. You must take your historical behaviours into consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
 by the activities done during the recent days.
+5. When selecting the activity, you must take the frequency of the activity into consideration.
+6. Most people with a full time job tend to have full day works to do during the workday. Most of them goes to workplace during the day, but some may have different working hours, depends on their working industry. \
+The basic working hours are 7 or 8 hours from 9 am to 5 pm or 6 pm, for 5 (or 6) days per week. However, many workers stay in the office until much later, for example until 9 pm to 10 pm. \
+If their working hours include meal breaks, they tend to eat nearby.
 
-Note:
+Important:
 1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
 2. The routine of a day must start at 0:00 and end at 23:59. \
 The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
 For example, you should create activity like '["sleep", "Home", ["22:18", "23:59"]]'.
-3. When selecting the activity, you must take the frequency of the activity into consideration.
-4. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity.
+3. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity. 
+4. Most full time worker works around 8 hours a day during working day.
 Answer format: [activity name, location, [start time, end time]].
 
 5 example outputs:
@@ -133,5 +137,5 @@ Answer format: [activity name, location, [start time, end time]].
 5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
 
 Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
-""". format(date, weekday, time, pre_mot, mem, time)
+""". format(date, weekday, time, [sublist[:3] for sublist in pre_mot], mem, time)
     return msg
