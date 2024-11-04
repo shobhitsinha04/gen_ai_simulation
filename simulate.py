@@ -54,15 +54,13 @@ def valid_mot(data):
 
 def gen_next_motivation(llm: str, context: str, pre_mot, mem, date: str, weekday: str, time: str):
     msg = next_motivation_prompt(pre_mot, mem, date, weekday, time)
-    print("===msg===")
-    print(msg)
     while True:
         if llm == 'llama':
             print("--- llama ---")
             res = llama_generate(context, msg)
         else:
             print("--- gpt ---")
-            res = gpt_generate(context, msg)
+            res = gpt_generate(context, msg, 256)
         
         print(res)
         try:
@@ -107,7 +105,6 @@ if __name__ == '__main__':
 
     f1 = open("res/personas.json")
     p = json.load(f1)
-    # freq_counter = init_freq_count()
     date = args.date
     if (not date):
         date = datetime.datetime.today().strftime("%d-%m-%Y")
@@ -152,12 +149,14 @@ Each activity in your daily activity dictionary is given in the format 'activity
 
                 # Check if home/workplace/education
                 if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
-                    if (args.model == 'physical' or args.model == 'physical_mix') :
-                        # TODO another model 'mix', add arg
-                        # TODO check: is the user location (previous) correct
+                    if args.model == 'physical':
                         user_loc = cur_routine[-1][-1]
-                        name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
+                        name, coord = rcmd.recommend(user_loc, res, densmap,  i, topk_counter, model='gravity')
                         # TODO: update time
+                        min = 15
+                    elif args.model == 'physical_mix':
+                        user_loc = cur_routine[-1][-1]
+                        name, coord = rcmd.recommend(user_loc, res, densmap, i, topk_counter, model='mix')
                         min = 15
                     else:
                         recommandation = memory_module.generate_recommendation(str(i), res)

@@ -19,10 +19,10 @@ if __name__ == '__main__':
     f1 = open("res/personas.json")
     p_count = len(json.load(f1))
 
-    overall_map = gmplot.GoogleMapPlotter(-33.917362, 151.227843, 13, apikey='')
+    overall_map = gmplot.GoogleMapPlotter(35.681855, 139.766565, 11, apikey='')
 
     for i in range(p_count):
-        submap = gmplot.GoogleMapPlotter(-33.917362, 151.227843, 13, apikey='')
+        submap = gmplot.GoogleMapPlotter(35.681855, 139.766565, 11, apikey='')
         filename = "res/routine_{}_{}.json".format(args.date, i)
         try:
             f = open(filename, 'r')

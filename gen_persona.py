@@ -163,7 +163,7 @@ def cleanup_activity_data(personas, activities):
         
         if 'meal' not in std_act:
             num_items = random.choice([1, 2, 3, 4, 5])
-            std_act['meal'] = random.choice(["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"])
+            std_act['meal'] = random.choice(["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"], num_items)
 
         if std_act:
             res.append(std_act)
@@ -302,7 +302,7 @@ Generate persona based on the distribution of population, and the age and sex of
         daily_act = json.load(f)
 
     if not args.persona:
-        print("=== Completing Personas ===")
+        print("=== Completing Personas & Activity ===")
         if (args.location == 'Sydney'):
             csv = pd.read_csv('data/SYD/around_unsw.csv')
             homes = open('data/SYD/home.json') 

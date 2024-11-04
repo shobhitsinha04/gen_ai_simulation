@@ -44,7 +44,7 @@ def llama_generate(context, msg):
     res = outputs[0][input_ids.shape[-1]:]
     return tokenizer.decode(res, skip_special_tokens=True)
 
-def gpt_generate(context, msg):
+def gpt_generate(context, msg, token=512):
     try: 
         res = openai.ChatCompletion.create(
             model="gpt-4o-mini",
@@ -52,7 +52,7 @@ def gpt_generate(context, msg):
                 {"role": "system", "content": context},
                 {"role": "user", "content": msg}
             ],
-            max_tokens=512,
+            max_tokens=token,
         )
     except openai.OpenAIError as e:
         print(f"Error generating weekly summary: {e}")

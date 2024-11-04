@@ -1,0 +1,35 @@
+[
+    ["sleep", "Home", ["0:00", "7:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["eat", "Home", ["7:00", "7:30"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Park", ["7:30", "09:10"], "Kensington Park", [-33.9153, 151.2285]], 
+    ["education", "Primary and Secondary School", ["09:10", "12:00"], "Primary and Secondary School", [-33.8976, 151.2585]], 
+    ["leisure activities", "Home", ["12:00", "14:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Cinemas", ["14:00", "16:45"], "Starlight Cinema", [34.0522, -118.2437]], 
+    ["leisure activities", "Home", ["16:45", "18:30"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Home", ["18:30", "20:30"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Home", ["20:30", "22:30"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Home", ["22:30", "23:59"], "Home", [-33.91994097129067, 151.22792487281285]]]
+
+
+[
+    ["sleep", "Home", ["0:00", "7:29"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["eat", "Home", ["7:30", "8:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Park", ["8:00", "10:12"], "Fred Hollows Reserve", [-33.9104, 151.2454]], 
+    ["education", "Primary and Secondary School", ["10:12", "12:00"], "Primary and Secondary School", [-33.8976, 151.2585]], 
+    ["leisure activities", "Home", ["12:00", "14:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["shopping", "Grocery", ["14:00", "16:10"], "Woolworths Metro Randwick", [-33.9167, 151.2415]], 
+    ["leisure activities", "Cinemas", ["16:10", "18:25"], "Moonlight Cinema", [-33.8688, 151.2093]], 
+    ["leisure activities", "Home", ["18:25", "20:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Home", ["20:00", "22:00"], "Home", [-33.91994097129067, 151.22792487281285]], 
+    ["leisure activities", "Home", ["22:18", "23:59"], "Home", [-33.91994097129067, 151.22792487281285]]]
+[
+    ["work", "Workplace", ["8:00", "12:00"], "Workplace", [-33.9178, 151.2319]], 
+    ["eat", "Home", ["12:15", "12:30"], "Home", [-33.91303088933229, 151.23743644283317]], 
+    ["eat", "Cafe", ["12:45", "13:25"], "Plume Cafe", [-33.9174, 151.234]], 
+    ["leisure activities", "Cinemas", ["13:30", "15:15"], "Cinema Royale", [40.7128, -74.006]], 
+    ["sports and exercise", "Gym", ["15:30", "16:27"], "Fitness First Randwick", [-33.918, 151.2412]], 
+    ["eat", "Restaurant", ["16:45", "17:20"], "The Garden Restaurant", [-33.917, 151.235]], 
+    ["shopping", "Grocery", ["17:40", "18:35"], "Woolworths Metro Randwick", [-33.9167, 151.2415]], 
+    ["sleep", "Home", ["18:35", "22:00"], "Home", [-33.91303088933229, 151.23743644283317]], 
+    ["leisure activities", "Park", ["22:15", "23:30"], "Queens Park", [-33.907, 151.2428]], 
+    ["sleep", "Home", ["23:30", "23:59"], "Home", [-33.91303088933229, 151.23743644283317]]]
