@@ -3,12 +3,14 @@ import datetime
 import re
 import json
 
+# import dest_phy.recommend as rcmd
+# from dest_phy.densmapClass import *
+from densmapClass import *
 import recommend as rcmd
-from utils import llm_generate, gen_person_info
+from dest_phy.topk_lossy_count import *
+from helper.utils import llama_generate, gpt_generate, mem_retrieval
+from helper.prompt import person_info_prompt, next_motivation_prompt
 from mem_module_upgraded import MemoryModule
-from topk_lossy_count import *
-
-
 
 def validate_date(date_str: str):
     # Regular expression for validating date format dd-mm-yyyy
@@ -46,49 +48,52 @@ def time_update(curr_time: str, min: int):
     new_time = time_obj + datetime.timedelta(minutes=min)
     return new_time.strftime(format)
 
-def gen_next_motivation(context: str, pre_mot, mem, date: str, weekday: str, time: str):
-    msg = """Today is {}, {}. Now is {}. You've already done the following activities: {}.
-Some summaries about your historial behaviours are given below:
-{}
+def valid_mot(data):
+    return isinstance(data, list) and len(data) == 3 and isinstance(data[0], str) and isinstance(data[1], str)\
+        and isinstance(data[2], list) and len(data[2]) == 2 and all(isinstance(item, str) for item in data[2])
 
-Task: Based on current date and time, your personal information, recent arrangements and historical behaviours, please randomly select your next activity from your daily activity dictionary, \
-and pick a location from the location list corresponds to the chosen activity. You should also decide the time duration for the selected activity.
+def gen_next_motivation(llm: str, context: str, pre_mot, mem, date: str, weekday: str, time: str):
+    msg = next_motivation_prompt(pre_mot, mem, date, weekday, time)
+    print("===msg===")
+    print(msg)
+    while True:
+        if llm == 'llama':
+            print("--- llama ---")
+            res = llama_generate(context, msg)
+        else:
+            print("--- gpt ---")
+            res = gpt_generate(context, msg)
+        
+        print(res)
+        try:
+            parsed_json = json.loads(res)
+            if valid_mot(parsed_json):
+                break
+            else:
+                if (valid_mot(parsed_json[0])):
+                    parsed_json = parsed_json[0]
+                    print("Invalid Format received, fixed...")
+                    break
+                else:
+                    print("Invalid Format received, retrying...")
 
-Requirements for routine generation:
-1. You must consider how your character attributes and personality may affect your activity and location selection.
-2. The next activity should start at now, which is {}.
-3. You must consider how the date and time may affect your activity and location selection. For example, most people sleep at night, and most people only goes to work during weekdays.
-4. You must take your historical behaviours in to consideration. For example, some people may have similar routine on the same day of the week, some people's daily routine may be affected \
-by the activities done during the recent days.
-
-Note:
-1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
-2. The routine of a day must start at 0:00 and end at 23:59. \
-The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
-For example, you should create activity like '["sleep", "Home", ["22:18", "23:59"]]'.
-3. When selecting the activity, you must take the frequency of the activity into consideration.
-4. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity.
-Answer format: [activity name, location, [start time, end time]].
-
-5 example outputs:
-1. ["sleep", "Home", ["0:00", "7:29"]]
-2. ["work", "Workplace", ["13:32", "17:30"]]
-3. ["eat", "Cafe", ["11:49", "12:12"]]
-4. ["sleep", "Hotel", ["22:25", "23:59"]]
-5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
-
-Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
-""". format(date, weekday, time, pre_mot, mem, time)
-
-    res = llm_generate(context, msg)
-    return json.loads(res)
+        except json.JSONDecodeError:
+            print("Invalid JSON received, retrying...")
+            
+    return parsed_json
 
 parser = argparse.ArgumentParser(description='genMotivation')
 # parser.add_argument('-a', action='store_true') # Generate activity list for each persona
 parser.add_argument('-d', '--date', type=validate_date, help="Date in the format dd-mm-yyyy")
 parser.add_argument('-n', '--num_of_days', type=int, default=1, help="Number of days to simulate")
-parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
-# parser.add_argument('--model', default = '...', type=str)
+parser.add_argument('--location', choices=['Sydney', 'Tokyo'], default='Tokyo', 
+    help="Choose location: either 'Sydney' or 'Tokyo'", type=str)
+parser.add_argument('-m', "--model", choices=['physical', 'physical_mix', 'llm'], default='llm',
+    help="Specify the model type to use: 'physical', 'physical_mix' or 'llm'", type=str)
+parser.add_argument('-l', "--llm", choices=['llama', 'gpt'], default='llama',
+    help="Specify the model type to use: llama or gpt", type=str)
+
+# parser.add_argument('-p', '--exploration') # Include exploration behaviours into the model
 # parser.add_argument('--population', default = 'population.json', type=str)
 # parser.add_argument('--mode_choice', default = 'realRatio', type=str)  # realRatio
 args = parser.parse_args()
@@ -100,10 +105,9 @@ if __name__ == '__main__':
     topk_counter = load_topk()
     densmap = rcmd.read_densmaps()
 
-
     f1 = open("res/personas.json")
     p = json.load(f1)
-    freq_counter = init_freq_count()
+    # freq_counter = init_freq_count()
     date = args.date
     if (not date):
         date = datetime.datetime.today().strftime("%d-%m-%Y")
@@ -122,64 +126,50 @@ if __name__ == '__main__':
             cur_routine = []
             time = "0:00"
 
-            # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
-            try:
-                monthly_mem = memory_module.monthly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
-            except KeyError as e:
-                print("Monthly Memory unavailable...")
-                monthly_mem = ''
-
-            try:
-                weekly_mem = memory_module.weekly_summaries[i][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
-            except KeyError as e:
-                print("Weekly Memory unavailable...")
-                weekly_mem = ''
-
-            try:
-                daily_mem = ''
-                for d in range(3):
-                    rec_day = (datetime.datetime.today() - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
-                    daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[d][rec_day] + '. '
-            except KeyError as e:
-                print("Daily Memory: {}".format(daily_mem))
-
-            mem = monthly_mem + weekly_mem + daily_mem
+            # Retrieve memory
+            mem = mem_retrieval(memory_module, i, date)
             print("Mem: " + mem)
             
             if mem == '':
                 mem = 'No historical data available.'
 
             # Prepare prompt
-            context = gen_person_info(p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
+            context = person_info_prompt(args.location, p[i]["name"], p[i]["age"], p[i]["gender"], p[i]["occupation"], p[i]["personality"]["ext"], p[i]["personality"]["agr"], p[i]["personality"]["con"], p[i]["personality"]["neu"], p[i]["personality"]["ope"])
             context += """Your daily activities, their frequencies and possible happening locations is given in your daily activity dictionary. \
 Each activity in your daily activity dictionary is given in the format 'activity: [frequency, location list]' as following:  
 {}.""".format(act[i])
             
+            print("=== Day {} Person {} ===\n".format(num, i))
             # Generate routine
             while (not check_routine_finished(time)):
-                print(i)
-                print(time)
+                print("=== Person {}, now is {} ===".format(i, time))
                 # This is the loop that generate one day routine activity by activity (for one person)
-                res = gen_next_motivation(context, cur_routine, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
+                res = gen_next_motivation(args.llm, context, cur_routine, mem, date, weekday, time) # Return ["sleep", "Home", ["0:00", "7:29"]]
 
                 while (not valid_time(res[2][1])):
                     # Check if llm generates invalid time
                     res = gen_next_motivation(context, cur_routine, [], date, weekday, time)
 
                 # Check if home/workplace/education
-                # TODO: Divide and conquer 
                 if (res[1] != 'Home' and res[1] != 'Workplace' and not (res[0] == 'education' and p[i]["occupation"] == 'student')):
-                    # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
-                    recommandation = memory_module.generate_recommendation(str(i), res)
-                    # name, coord, min = memory_module.generate_choice(res, recommandation, 'data/around_unsw.csv') # [name, coord, time (int)]
-                    # TODO another model 'mix', add arg
-                    # TODO check: is the user location (previous) correct
-                    user_loc = cur_routine[-1][-1]
-                    name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
-                    # TODO: miss min
+                    if (args.model == 'physical' or args.model == 'physical_mix') :
+                        # TODO another model 'mix', add arg
+                        # TODO check: is the user location (previous) correct
+                        user_loc = cur_routine[-1][-1]
+                        name, coord = rcmd.recommend(user_loc, res, densmap, model='gravity')
+                        # TODO: update time
+                        min = 15
+                    else:
+                        recommandation = memory_module.generate_recommendation(str(i), res)
+                        if (args.location == 'Sydney'):
+                            name, coord, min = memory_module.generate_choice(args.location, res, recommandation, "POI_data/POI_data/{}_ca_poi.csv".format(res[1])) # [id, coord, time (int)]
+                        else:
+                            name, coord, min = memory_module.generate_choice(args.location, res, recommandation, 'data/TKY/around_unsw.csv') # [name, coord, time (int)]
                     
                     res.append(name)
                     res.append(coord)
+
+                    # Update res to ["sleep", "Hotel", ["0:00", "7:29"], name, coord] format
                     res[2][1] = time_update(res[2][1], min)
                 else:
                     res.append(res[1])

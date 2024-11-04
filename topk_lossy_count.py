@@ -42,7 +42,7 @@ def update_topk(topk_counter, daily_activities, bucket_size=5):
            for activity in activities:
                activity_type = activity[1]
                location_id = activity[3]
-               
+
                # 初始化新的类别
                if activity_type not in topk_counter[persona_id]:
                    topk_counter[persona_id][activity_type] = {

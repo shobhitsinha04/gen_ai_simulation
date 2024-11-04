@@ -93,7 +93,7 @@ def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity
             result = None, None
             
         return result
-       
+    
    elif model == 'mix':
         # 获取gravity模型的推荐
         dens_matrix = densmap[tag]
@@ -120,6 +120,7 @@ def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity
         merged_df['final_weight'] = (1-alpha) * merged_df['gravity_weight'] + alpha * merged_df['weight']
         # print(merged_df)
         # print(merged_df[merged_df['venue_id']==topk_candidate['venue_id'][0]])
+        
        # 标准化权重
         if merged_df['final_weight'].sum() > 0:
             merged_df['final_weight'] = merged_df['final_weight'] / merged_df['final_weight'].sum()

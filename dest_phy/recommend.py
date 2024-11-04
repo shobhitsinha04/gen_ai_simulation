@@ -1,7 +1,7 @@
 import pickle as pkl
 import json
 import os
-from densmapClass import * 
+from dest_phy.densmapClass import *
 import numpy as np
 import pandas as pd
 
@@ -28,7 +28,7 @@ def read_densmaps(path = None):
         path = os.path.join(parent_dir,'densMaps.pkl')
     try:
         with open(path, 'rb') as f:
-            densmaps= pkl.load(f)
+            densmaps = pkl.load(f)
     except FileNotFoundError:
         print("Density Matrix File doesn't exsit, run gen_densMatrix First")
         return FileNotFoundError("Density Matrix File is missing") 
