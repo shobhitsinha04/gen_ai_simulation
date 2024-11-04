@@ -287,8 +287,22 @@ class MemoryModule:
             })
         return places
     
-    def generate_choice(self, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
-        places = self.get_places_from_csv(file_path, activity_info)
+    def get_places_from_csv_TKY(self, file_path: str) -> List[dict[str, str]]:
+        columns = ['Category', 'lat', 'lng']
+        df = pd.read_csv(file_path, usecols=columns)
+
+        # Correct column references for 'lat' and 'lng'
+        df['Coordinates'] = list(zip(df['lat'], df['lng']))
+        df = df[['Category', 'Coordinates']]
+
+        return df.to_dict(orient='records')
+    
+    def generate_choice(self, loc: str, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
+        if loc == 'Sydney': 
+            places = self.get_places_from_csv(file_path, activity_info)
+        else:
+            places = self.get_places_from_csv_TKY(file_path)
+
         activities_str = f"Activity: {activity_info[0]}, Location Category: {activity_info[1]}, Time: {activity_info[2]}"
         
         # Creating the prompt
@@ -304,7 +318,10 @@ class MemoryModule:
     )
 
         for place in places:
-            prompt += f"{place['Name']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
+            if loc == 'Sydney': 
+                prompt += f"{place['Name']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
+            else:
+                prompt += f"{place['Coordinates']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
 
         # Call the OpenAI API to generate the choice
         try:
@@ -517,17 +534,17 @@ class MemoryModule:
 
 #Testing the module 
 cata_act = {
-    "work": ["..."],
-    "go home": ["home"],
-    "eat": ["home", "restaurant", "cafe", "pub and bar", "food court"],
-    "sleep": ["home", "hotel"],
-    "shopping": ["grocery", "other shopping"],
-    "sports and exercise": ["gym", "field", "park"],
-    "leisure activities": ["home", "cinemas", "park", "stadium", "museum"],
-    "medical treatment": ["hospital", "clinic", "dentist"],
-    "education": ["university", "VET", "primary and secondary school", "preschool", "library", "other education"],
-    "religious activities": ["church"],
-    "trifles": ["legal and financial service", "automotive service", "health and beauty service"]
+    "work": ["Workplace"],
+    "go home": ["Home"],
+    "meal": ["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"],
+    "sleep": ["Home", "Hotel"],
+    "shopping": ["Grocery", "Other Shopping"],
+    "sports and exercise": ["Gym", "Field", "Outdoors"],
+    "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
+        "Library", "Drink and Dessert Shop", "Social Event"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool"],
+    "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
+    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
 }
 
 ############################################################################################################

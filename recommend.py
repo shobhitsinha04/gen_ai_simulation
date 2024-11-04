@@ -1,7 +1,9 @@
 import pickle as pkl
 import json
 import os
-from densmapClass import * 
+
+from densmapClass import *
+
 import numpy as np
 import pandas as pd
 
@@ -22,13 +24,17 @@ def read_densmaps(path = None):
     # get parent directory path
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
+
+        parent_dir = os.path.dirname(__file__)
+
         path = os.path.join(parent_dir, 'POI_data', 'densMaps.pkl')
     else:
         path = os.path.join(parent_dir,'densMaps.pkl')
     try:
         with open(path, 'rb') as f:
-            densmaps= pkl.load(f)
+
+
+
     except FileNotFoundError:
         print("Density Matrix File doesn't exsit, run gen_densMatrix First")
         return FileNotFoundError("Density Matrix File is missing") 
@@ -38,6 +44,7 @@ def calculate_weight(row,densmap,user_loc):
     x = row['xIndex']
     y = row['yIndex']
     dist = geodesic(user_loc, (row['lat'], row['lng'])).m
+
     return densmap[x, y] / ((dist+50) ** 1.5)
 
 
@@ -64,33 +71,34 @@ def recommend(user_loc, activity, densmap, model='gravity'):
 '''
 
 
+def recommend(user_loc, activity, densmap, model='gravity',path = None):
+    tag = activity[1]
 
-def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity', path=None, alpha=0.05):
-   tag = activity[1]
+    if path == None:
+        # get parent directory path
+        # parent_dir = os.path.dirname(os.path.dirname(__file__))
+        parent_dir = os.path.dirname(__file__)
+        path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
+    else:
+        path = os.path.join(parent_dir,tag+'_ca_poi.csv')
 
-   if path == None:
-       parent_dir = os.path.dirname(os.path.dirname(__file__))
-       path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
-   else:
-       path = os.path.join(parent_dir,tag+'_ca_poi.csv')
-   
-   # 读取POI数据集
-   poi_set = pd.read_csv(path)
-
-   if model == 'gravity':
-       dens_matrix = densmap[tag]
-       candidate = compute_weight_gravity(user_loc, dens_matrix, poi_set)
-       
-       if len(candidate) > 0:
-           random_row = candidate.sample(n=1, weights='weight')
-           result = random_row['ID'].iloc[0], [random_row['lat'].iloc[0], random_row['lng'].iloc[0]]
-       else:
-           print('cannot find candiate in this poi set')
-           result = None, None
-           
-       return result
-       
-   elif model == 'mix':
+    poi_set = pd.read_csv(path)
+    
+    if model == 'gravity':
+        dens_matrix = densmap[tag]
+        candidate = compute_weight_gravity(user_loc, dens_matrix, poi_set)
+        
+        if len(candidate) > 0:
+            random_row = candidate.sample(n=1, weights='weight')
+            result = random_row['ID'].iloc[0], [random_row['lat'].iloc[0], random_row['lng'].iloc[0]]
+        else:
+            # 如果没有合适的POI，返回None或者自定义的默认值
+            print('cannot find candiate in this poi set')
+            result = None, None
+            
+        return result
+          
+    elif model == 'mix':
        # 获取gravity模型的推荐
        dens_matrix = densmap[tag]
        gravity_candidate = compute_weight_gravity(user_loc, dens_matrix, poi_set)
@@ -138,8 +146,7 @@ def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity
        
    else:
        return None, None
-
-
+    
 
 def compute_weight_gravity(user_loc, dens_matrix, poi_set, r=10000):
     # 获取密度矩阵的大小
@@ -227,10 +234,12 @@ def compute_weight_gravity(user_loc, dens_matrix, poi_set, r=10000):
         lambda x: calculate_weight(x, dens_matrix.densmap, user_loc), 
         axis=1
     )
-    #     # 选取权重最高的top 100
-    # if len(candidate) > 100:
-    #     candidate = candidate.nlargest(100, 'weight')
+
+    # 选取权重最高的top 100
+    if len(candidate) > 100:
+        candidate = candidate.nlargest(100, 'weight')
     
+
     
     # 标准化权重
     if candidate['weight'].sum() > 0:
@@ -323,7 +332,6 @@ def recommend(user_loc, activity, densmap, model='gravity',path = None):
         return result
     else:
         return None, None
-
 
 # def compute_weight_gravity(user_loc, dens_matrix, poi_set,r=10000):
 #     # get user index
