@@ -1,5 +1,6 @@
 import os
 import json
+import os
 
 def load_topk(path = None):
     if path == None:

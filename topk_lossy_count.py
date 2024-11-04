@@ -41,12 +41,12 @@ def update_topk(topk_counter, daily_activities, bucket_size=5):
        for date, activities in dates.items():
            for activity in activities:
                activity_type = activity[1]
-               location_id = activity[4]
-               
+               location_id = activity[3]
+
                # 初始化新的类别
                if activity_type not in topk_counter[persona_id]:
                    topk_counter[persona_id][activity_type] = {
-                       'bucket_num': 1,
+                       'bucket_num': 0,
                        'total_num': 0,
                        'freq': pd.DataFrame(columns=['venue_id', 'freq', 'bucket_i'])
                    }
@@ -72,13 +72,12 @@ def update_topk(topk_counter, daily_activities, bucket_size=5):
                cat_data['total_num'] += 1
                
                # 检查是否需要清理
-               if cat_data['total_num'] >= bucket_size:
+               if cat_data['total_num'] %bucket_size ==0:
                    # 清理
                    mask = freq_df['freq'] + freq_df['bucket_i'] > cat_data['bucket_num']
                    freq_df = freq_df[mask]
                    
                    # 重置计数器
-                   cat_data['total_num'] = 0
                    cat_data['bucket_num'] += 1
                
                # 更新DataFrame
