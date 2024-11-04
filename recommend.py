@@ -22,7 +22,8 @@ def read_densmaps(path = None):
     # get parent directory path
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        # parent_dir = os.path.dirname(os.path.dirname(__file__))
+        parent_dir = os.path.dirname(__file__)
         path = os.path.join(parent_dir, 'POI_data', 'densMaps.pkl')
     else:
         path = os.path.join(parent_dir,'densMaps.pkl')
@@ -73,7 +74,8 @@ def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity
    tag = activity[1]
 
    if path == None:
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
+        parent_dir = os.path.dirname(__file__)
+        # parent_dir = os.path.dirname(os.path.dirname(__file__))
         path = os.path.join(parent_dir, 'POI_data', tag+'_ca_poi.csv')
    else:
         path = os.path.join(path,tag+'_ca_poi.csv')
@@ -120,7 +122,7 @@ def recommend(user_loc, activity, densmap, user_id, topk_counter, model='gravity
         merged_df['final_weight'] = (1-alpha) * merged_df['gravity_weight'] + alpha * merged_df['weight']
         # print(merged_df)
         # print(merged_df[merged_df['venue_id']==topk_candidate['venue_id'][0]])
-        
+
        # 标准化权重
         if merged_df['final_weight'].sum() > 0:
             merged_df['final_weight'] = merged_df['final_weight'] / merged_df['final_weight'].sum()
