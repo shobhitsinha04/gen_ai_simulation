@@ -117,8 +117,10 @@ Requirements for routine generation:
 by the activities done during the recent days.
 5. When selecting the activity, you must take the frequency of the activity into consideration.
 6. Most people with a full time job tend to have full day works to do during the workday. Most of them goes to workplace during the day, but some may have different working hours, depends on their working industry. \
-The basic working hours are 7 or 8 hours from 9 am to 5 pm or 6 pm, for 5 (or 6) days per week. However, many workers stay in the office until much later, for example until 9 pm to 10 pm. \
+The basic working hours are 7 or 8 hours from 9:00 to 17:00 or 18:00, for 5 (or 6) days per week. However, many workers stay in the office until much later, for example until 21:00 to 22:00. \
 If their working hours include meal breaks, they tend to eat nearby.
+7. A primary or secondary school student’s day generally start their school at around 8:15 (30 mins variance), and classes end around 15:45 (30 mins variance). After school hours can be dedicated to club activities (in school). \
+College and university stdents tend to have more flexible schedule.
 
 Important:
 1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
@@ -129,12 +131,17 @@ For example, you should create activity like '["sleep", "Home", ["22:18", "23:59
 4. Most full time worker works around 8 hours a day during working day.
 Answer format: [activity name, location, [start time, end time]].
 
-5 example outputs:
-1. ["sleep", "Home", ["0:00", "7:29"]]
+10 example outputs:
+1. ["sleep", "Home", ["0:00", "8:22"]]
 2. ["work", "Workplace", ["13:32", "17:30"]]
 3. ["eat", "Cafe", ["11:49", "12:12"]]
 4. ["sleep", "Hotel", ["22:25", "23:59"]]
 5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
+6. ["work", "Workplace", ["8:12", "20:27"]]
+7. ["education", "Primary and Secondary School", ["8:23", "17:51"]]
+8. ["sleep", "Home", ["0:00", "9:47"]]
+9. ["leisure activities", "Entertainment", ["21:31", "23:14"]]
+10. ["shopping", "Other Shopping", ["15:33", "18:09"]]
 
 Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
 """. format(date, weekday, time, [sublist[:3] for sublist in pre_mot], mem, time)

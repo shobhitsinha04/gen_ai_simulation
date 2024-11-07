@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     for i in range(p_count):
         submap = gmplot.GoogleMapPlotter(35.681855, 139.766565, 11, apikey='')
-        filename = "res/routine_{}_{}.json".format(args.date, i)
+        filename = "res/phy/routine_{}_{}.json".format(args.date, i)
         try:
             f = open(filename, 'r')
             routine = json.load(f)
@@ -49,7 +49,13 @@ if __name__ == '__main__':
         submap.draw("plots/mob_{}_{}.html".format(args.date, i))
 
         if (i != 1):
-            overall_map.scatter(latitude_list, longitude_list, '#FF0000', size = 40, marker = False)
+            # Plot the starting point as a single blue marker
+            overall_map.scatter([latitude_list[0]], [longitude_list[0]], color=['#0000FF'], size=500, marker=False, symbol=['x'])
+
+            # Plot the rest of the points in red
+            overall_map.scatter(latitude_list[1:], longitude_list[1:], '#FF0000', size=500, marker=False)
+
+            # overall_map.scatter(latitude_list, longitude_list, '#FF0000', size = 500, marker = False)
             overall_map.plot(latitude_list, longitude_list, 'cornflowerblue', edge_width = 2.5)
 
     overall_map.draw("plots/overall_mob.html")
