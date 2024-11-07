@@ -1,17 +1,17 @@
-import json
+import pickle as pkl
 import os
 import pandas as pd
 
 def load_topk(path = None):
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
-        path = os.path.join(parent_dir, 'POI_data', 'topk.json')
+        parent_dir = os.path.dirname(__file__)
+        path = os.path.join(parent_dir, 'POI_data', 'topk.pkl')
     else:
-        path = os.path.join(path,'topk.json')
+        path = os.path.join(path,'topk.pkl')
     try:
-        with open(path, 'r') as f:
-            topk_counter= json.load(f)
+        with open(path, 'rb') as f:
+            topk_counter= pkl.load(f)
     except FileNotFoundError:
         topk_counter = {}
     return topk_counter
@@ -19,12 +19,12 @@ def load_topk(path = None):
 def save_topk(topk,path = None):
     if path == None:
         # get parent directory path
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
-        path = os.path.join(parent_dir, 'POI_data', 'topk.json')
+        parent_dir = os.path.dirname(__file__)
+        path = os.path.join(parent_dir, 'POI_data', 'topk.pkl')
     else:
-        path = os.path.join(path,'topk.json')
-    with open(path, 'w') as f:
-        json.dump(topk, f)
+        path = os.path.join(path,'topk.pkl')
+    with open(path, 'wb') as f:
+        pkl.dump(topk, f)
 
 # topk counter structure:
 '''
@@ -53,7 +53,6 @@ def update_topk(topk_counter, daily_activities, bucket_size=5):
                
                cat_data = topk_counter[persona_id][activity_type]
                freq_df = cat_data['freq']
-               
                # 更新频率
                if location_id in freq_df['venue_id'].values:
                    # 更新已存在的venue

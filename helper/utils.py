@@ -8,6 +8,20 @@ import openai
 model_name = "/mnt/data728/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct"
 openai.api_key = ''
 
+act_loc = {
+    "work": ["Workplace"],
+    "go home": ["Home"],
+    "meal": ["Home", "Restaurant", "Cafe", "Pub and Bar", "Casual Dining"],
+    "sleep": ["Home", "Hotel"],
+    "shopping": ["Grocery", "Other Shopping"],
+    "sports and exercise": ["Gym", "Field", "Outdoors"],
+    "leisure activities": ["Home", "Art and Performance", "Entertainment", "Pub and Bar", "Outdoors", "Stadium", "Museum", 
+        "Library", "Drink and Dessert Shop", "Social Event"],
+    "education": ["College and University", "Vocational Training", "Primary and Secondary School", "Preschool"],
+    "religious activities": ["Church", "Shrine", "Temple", "Synagogue", "Spiritual Center", "Mosque"],
+    "trifles": ["Legal and Financial Service", "Automotive Service", "Health and Beauty Service", "Medical Service", "Other Service"],
+}
+
 def llama_generate(context, msg):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
@@ -55,7 +69,7 @@ def gpt_generate(context, msg, token=512):
             max_tokens=token,
         )
     except openai.OpenAIError as e:
-        print(f"Error generating weekly summary: {e}")
+        print(f"Error GPT no reponse: {e}")
         return
 
     return res['choices'][0]['message']['content'].strip()
@@ -68,25 +82,29 @@ def random_in_quad(v1, v2, v3, v4):
             y = s * v1[1] + t * v2[1] + (1 - s - t) * v3[1]
             return (x, y)
 
-def mem_retrieval(memory_module: MemoryModule, persona: int, date):
+def mem_retrieval(memory_module: MemoryModule, persona: int, date, weekday):
     # Monthly/weekly/daily summary memory (the day of the week + weekly + recent 3 days)
+    # print(weekday)
+    # print(memory_module.monthly_summaries[str(persona)][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')])
     try:
-        monthly_mem = memory_module.monthly_summaries[persona][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
+        monthly_mem = memory_module.monthly_summaries[str(persona)][datetime.datetime.strptime(date, "%d-%m-%Y").strftime('%m-%Y')][weekday] # {'Monday': 'Summary', 'Tue'}
     except KeyError as e:
         print("Monthly Memory unavailable...")
         monthly_mem = ''
 
     try:
-        weekly_mem = memory_module.weekly_summaries[persona][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
+        weekly_mem = memory_module.weekly_summaries[str(persona)][datetime.datetime.strptime(date, "%d-%m-%Y").isocalendar()[1]]
     except KeyError as e:
         print("Weekly Memory unavailable...")
         weekly_mem = ''
 
     try:
         daily_mem = ''
-        for d in range(3):
-            rec_day = (datetime.datetime.today() - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
-            daily_mem += 'Daily routine summary for ' + rec_day + 'is: ' + memory_module.summaries[d][rec_day] + '. '
+        for d in range(5):
+            rec_day = (datetime.datetime.strptime(date, '%d-%m-%Y') - datetime.timedelta(days=(d+1))).strftime("%d-%m-%Y")
+            print(rec_day)
+            if rec_day in memory_module.summaries[str(persona)]:
+                daily_mem += 'Daily routine summary for ' + rec_day + ' is: ' + memory_module.summaries[str(persona)][rec_day] + '. '
     except KeyError as e:
         print("Daily Memory: {}".format(daily_mem))
 

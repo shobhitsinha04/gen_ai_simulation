@@ -56,6 +56,8 @@ class MemoryModule:
             for date, activities in dates.items():
                 processed_activities = [[activity[0], activity[1], activity[2]] for activity in activities]
                 self.daily_activities[persona_id][date] = processed_activities
+                if persona_id not in self.day_counters:
+                    self.day_counters[persona_id] = len(self.daily_activities[persona_id])
                 self.day_counters[persona_id] += 1
 
 
@@ -80,7 +82,7 @@ class MemoryModule:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": f"Please summarize the following activities for the day in a concise, coherent paragraph: {activities_json}"}
                 ],
-                max_tokens=100,
+                max_tokens=150,
             )
         except openai.OpenAIError as e:
             print(f"Error generating summary: {e}")
@@ -153,6 +155,7 @@ class MemoryModule:
         persona_id: The ID of the persona.
         end_date: The end date of the month to be summarized.
         """
+
         end_date_dt = datetime.strptime(end_date, '%d-%m-%Y')
         start_date_dt = end_date_dt.replace(day=1)
 
@@ -223,7 +226,7 @@ class MemoryModule:
         location_category = activity_info[1].lower()
         # time_range = activity_info[2]
 
-        locations = cata_act.get(location_category, [])
+        locations = cata_act.get(intention, [])
         relevant_activities = []
 
         for date, activities in self.daily_activities.get(persona_id, {}).items():
@@ -240,6 +243,9 @@ class MemoryModule:
         """
         # getting the relevant activities from history for the type of location category
         relevant_activities = self.retrieve_activities_by_location(persona_id, activity_info)
+        print("In recommondation")
+        print(relevant_activities)
+
         activities_str = "; ".join(relevant_activities)
         if not activities_str:
             activities_str = "No relevant historical activities found."
@@ -310,7 +316,7 @@ class MemoryModule:
         f"The persona has an activity info: {activities_str}. Based on the recommendation: '{recommendation}', "
         f"please pick the best choice from the list of places in the attached CSV file. Provide the name, coordinates, "
         f"and an estimated transport time in minutes.\n"
-        f"Return the choice in this format - Name, [latitude, longitude], minutes.\n"
+        f"Return the choice in this format - ID, [latitude, longitude], minutes.\n"
         f"The name should be a string, and the latitude and longitude should be floats. The minutes should be an integer.(do not include the word minutes, in the minutes, just the integer)\n"
         f"Make sure not to output any other information other than just the choice, do not include any extra words"
         f"You should always respond with the required data in the format i mentioned above without any additional information, text or explanation.\n"
@@ -324,30 +330,46 @@ class MemoryModule:
                 prompt += f"{place['Coordinates']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
 
         # Call the OpenAI API to generate the choice
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=200,
-            )
-            choice = response['choices'][0]['message']['content'].strip()
-        
-            while not choice[-1].isdigit():
-                choice = choice[:-1]
+        while True:
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant who generate response without any additional introduction, text or explanation other then the required output. You should \
+                         generate a list without square brackets, where index 0 is the ID as str, index 1 is the coorfinate as a sublist [latitude, longitude], and index 2 is an integer represents the estimated transport time to the location in min."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=200,
+                )
+                choice = response['choices'][0]['message']['content'].strip()
+            
+                print("Choice outout: {}".format(choice))
 
-            comma_idx = choice.find(',')
-            if choice[0] != '"':
-                name = '"' + choice[:comma_idx] + '"'
-            choice = "[" + name + choice[comma_idx:] + "]"
-            res = json.loads(choice)
-            return res
+                while not choice[-1].isdigit():
+                    choice = choice[:-1]
 
-        except openai.OpenAIError as e:
-            print(f"Error generating choice: {e}")
-            return {}
+                comma_idx = choice.find(',')
+                if choice[0] != '"':
+                    print("in")
+                    name = '"' + choice[:comma_idx] + '"'
+                    choice = "[" + name + choice[comma_idx:] + "]"
+                
+                res = json.loads(choice)
+
+                if len(res) != 3:
+                    continue
+
+                break
+                
+            except openai.OpenAIError as e:
+                print(f"Error generating choice: {e}")
+                # return {}
+            
+            except json.JSONDecodeError:
+                print("Invalid JSON received, retrying...")
+
+        return res
+
 
     ##########################################################################################
     # FOR STORING MEMORY
@@ -374,6 +396,10 @@ class MemoryModule:
         try:
             with open('mem/daily_activities.json', 'r') as f:
                 self.daily_activities = json.load(f)
+            
+            for persona_id in self.daily_activities.keys():
+                self.day_counters[persona_id] = len(self.daily_activities[persona_id])
+
         except FileNotFoundError:
             self.daily_activities = {}
         
