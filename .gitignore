@@ -5,6 +5,8 @@ eval/gpt_persona.json
 eval/llama_output_persona.json
 eval/llama_persona.json
 data/TKY/population_backup.json
+check.py
+mem
 
 __pycache__
 helper/__pycache__
