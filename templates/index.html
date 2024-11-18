@@ -37,6 +37,10 @@
             margin: 1em;
         }
 
+        .controls {
+            margin: 1em 0;
+        }
+
         .activity-display {
             width: 80%;
             margin: 0 auto;
@@ -44,17 +48,15 @@
         }
 
         .agent-activity {
-            margin: 0.5em 0;
+            word-wrap: break-word;
+            overflow: hidden;
         }
 
-        input[type="text"], button {
-            padding: 0.5em;
+
+        .agent-buttons button {
+            margin: 0.5em;
+            padding: 0.5em 1em;
             font-size: 1em;
-            margin-top: 0.5em;
-        }
-
-        #commandInput {
-            width: 50%;
         }
     </style>
 </head>
@@ -72,22 +74,29 @@
 
     <div id="map"></div>
 
+    <div class="controls">
+        <label for="startTime">Start Time:</label>
+        <input type="text" id="startTime" placeholder="00:00">
+
+        <button onclick="startDay()">Start Day</button>
+    </div>
+
+    <div class="agent-buttons" id="agentButtons">
+        <!-- Agent toggle buttons will be populated here -->
+    </div>
+
     <div class="activity-display">
         <h2>Agent Activities</h2>
         <div id="agent-activities"></div>
     </div>
 
-    <input type="text" id="commandInput" placeholder="Type 'start the day' to begin simulation...">
-    <button onclick="sendCommand()">Send</button>
-
     <script>
-        // The Simulation Script
         let map;
         let agents = {};
         let time = 0; // Time in minutes, starting at 0 (00:00) by default
         let interval;
         const updateInterval = 15; // 15 minutes per interval
-        let isAutoRunning = true; // Flag to check if auto simulation is running
+        let isAutoRunning = true;
         const agentColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A8", "#FF8F33", "#33FFF8", "#FF3333", "#8B33FF", "#FF8E33", "#33FF83"];
 
         function initMap() {
@@ -95,27 +104,44 @@
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18,
             }).addTo(map);
+
+            fetchAgents(); // Fetch and display agents on map initialization
         }
 
-        function sendCommand() {
-            const command = document.getElementById("commandInput").value.trim();
-            if (command.toLowerCase().startsWith('start the day')) {
-                const timeMatch = command.match(/at (\d{1,2}:\d{2})/);
-                if (timeMatch) {
-                    time = timeToMinutes(timeMatch[1]); // setting custom start time
-                } else {
-                    time = 0; // Default to 00:00 if no time is specified
-                }
-
-                fetch('/start_day', {
-                    method: 'POST'
-                })
+        function fetchAgents() {
+            fetch('/start_day', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     agents = data.agents;
                     initializeAgentPaths();
-                    startSimulation();
+                    populateAgentButtons();
                 });
+        }
+
+        function populateAgentButtons() {
+            const buttonsContainer = document.getElementById("agentButtons");
+            buttonsContainer.innerHTML = ''; // Clear any previous buttons
+
+            Object.keys(agents).forEach((agentId, index) => {
+                const button = document.createElement("button");
+                button.textContent = `Agent ${agentId.split('_').pop()}`;
+                button.onclick = () => toggleAgentVisibility(agentId);
+                buttonsContainer.appendChild(button);
+            });
+        }
+
+        function toggleAgentVisibility(agentId) {
+            const polyline = agents[agentId]?.polyline;
+            const marker = agents[agentId]?.marker;
+
+            if (polyline && marker) {
+                if (map.hasLayer(polyline)) {
+                    map.removeLayer(polyline);
+                    map.removeLayer(marker);
+                } else {
+                    map.addLayer(polyline);
+                    map.addLayer(marker);
+                }
             }
         }
 
@@ -123,43 +149,59 @@
             Object.keys(agents).forEach((agentId, index) => {
                 const color = agentColors[index % agentColors.length];
                 agents[agentId].polyline = L.polyline([], { color: color, weight: 3 }).addTo(map);
+
+                // Initialize an empty array for storing polyline points with timestamps
+                agents[agentId].polylinePoints = [];
+
+                // Add initial markers for each agent
+                const firstActivity = agents[agentId][0];
+                if (firstActivity) {
+                    const lat = firstActivity.lat;
+                    const lng = firstActivity.lng;
+                    agents[agentId].marker = L.marker([lat, lng]).addTo(map);
+                    agents[agentId].marker.bindTooltip(agentId.split('_').pop(), { permanent: true, direction: "right" }).openTooltip();
+                }
             });
         }
 
+
+        function startDay() {
+            const startTime = document.getElementById("startTime").value.trim();
+            if (!/^([0-1]\d|2[0-3]):([0-5]\d)$/.test(startTime)) {
+                alert("Please enter a valid time in 24-hour format (e.g., 08:00).");
+                return;
+            }
+            time = timeToMinutes(startTime); // Convert start time to minutes
+            clearInterval(interval);         // Stop any previous simulation
+            isAutoRunning = true;            // Allow automatic progression
+            startSimulation();
+        }
+
         function startSimulation() {
-            clearInterval(interval); // Ensure no previous interval is running
-            // Update every 1 second for faster progression
-            interval = setInterval(updateClock, 1000); 
+            clearInterval(interval);
+            interval = setInterval(updateClock, 1000); // Slower time progression
             isAutoRunning = true;
-            // Syncing slider with current time
-            document.getElementById("timeSlider").value = time; 
+            document.getElementById("timeSlider").value = time;
             document.getElementById("clock").textContent = formatTime(time);
         }
 
         function updateClock() {
-            time += updateInterval;
-            if (time >= 1440) { // Cap at 24 hours (1440 minutes)
-                clearInterval(interval);
+            if (!isAutoRunning) return; // Skip updates if auto-running is disabled
+
+            time += updateInterval; // Increment the time by the defined interval (15 mins)
+            if (time >= 1440) {
+                clearInterval(interval); // Stop when 24 hours is reached
             }
+
+            // Update clock display and slider position
             document.getElementById("clock").textContent = formatTime(time);
-            // Sync slider with current time
-            document.getElementById("timeSlider").value = time; 
+            document.getElementById("timeSlider").value = time;
             document.getElementById("sliderTime").textContent = formatTime(time);
+
             updateAgents();
         }
-        
-        // Slider Stuff
-        function sliderChange(event) {
-            // Stop auto simulation while slider is being used
-            clearInterval(interval); 
-            isAutoRunning = false;
 
-            time = parseInt(event.target.value, 10); // slider value in minutes
-            document.getElementById("clock").textContent = formatTime(time);
-            document.getElementById("sliderTime").textContent = formatTime(time);
 
-            updateAgents(); // Update map and activities based on the slider's value
-        }
 
         function formatTime(minutes) {
             const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
@@ -168,7 +210,7 @@
         }
 
         function updateAgents() {
-            document.getElementById("agent-activities").innerHTML = ""; // Clear previous activities
+            document.getElementById("agent-activities").innerHTML = ""; // Clear the activity display
 
             Object.keys(agents).forEach(agentId => {
                 const activities = agents[agentId];
@@ -180,11 +222,30 @@
 
                 if (currentActivity) {
                     updateAgentMarker(agentId, currentActivity.lat, currentActivity.lng);
-                    addToAgentPath(agentId, currentActivity.lat, currentActivity.lng);
+                    addToAgentPath(agentId, currentActivity.lat, currentActivity.lng, time);
                     displayAgentActivity(agentId, currentActivity);
                 }
             });
         }
+
+
+        function sliderChange(event) {
+            clearInterval(interval); // Stop automatic progression when slider is adjusted
+
+            // Get the slider's current value and update the time
+            time = parseInt(event.target.value, 10); // Convert slider value to minutes
+            document.getElementById("clock").textContent = formatTime(time);
+            document.getElementById("sliderTime").textContent = formatTime(time);
+
+            // Update agents and their polylines based on slider time
+            updateAgents();
+
+            // Resume automatic progression from the slider's position
+            isAutoRunning = true;
+            interval = setInterval(updateClock, 1000); // Restart auto progression
+        }
+
+
 
         function timeToMinutes(timeStr) {
             const [hours, minutes] = timeStr.split(":").map(Number);
@@ -200,9 +261,22 @@
             }
         }
 
-        function addToAgentPath(agentId, lat, lng) {
-            agents[agentId].polyline.addLatLng([lat, lng]);
+        function addToAgentPath(agentId, lat, lng, currentTime) {
+            if (!agents[agentId].polylinePoints) {
+                agents[agentId].polylinePoints = [];
+            }
+
+            // Add the current point with its associated timestamp
+            agents[agentId].polylinePoints.push({ lat, lng, time: currentTime });
+
+            // Filter points to show only up to the current time
+            const validPoints = agents[agentId].polylinePoints.filter(point => point.time <= currentTime);
+
+            // Update the polyline with the valid points
+            const latLngs = validPoints.map(point => [point.lat, point.lng]);
+            agents[agentId].polyline.setLatLngs(latLngs);
         }
+
 
         function displayAgentActivity(agentId, activity) {
             const activityContainer = document.getElementById("agent-activities");
@@ -218,13 +292,8 @@
 
             activityContainer.appendChild(activityInfo);
         }
-
-        window.onload = () => {
-            initMap();
-
-            const timeSlider = document.getElementById("timeSlider");
-            timeSlider.addEventListener("input", sliderChange); // Add event listener for slider input
-        };
+        document.getElementById("timeSlider").addEventListener("input", sliderChange);
+        window.onload = initMap;
     </script>
 </body>
 </html>
