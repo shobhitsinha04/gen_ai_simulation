@@ -7,10 +7,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        /* Embedded style.css */
+        /* Styling for the simulation */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            margin: 0;
+            padding: 0;
         }
 
         h1 {
@@ -31,6 +33,10 @@
             margin: 0.5em;
         }
 
+        .slider-container {
+            margin: 1em;
+        }
+
         .activity-display {
             width: 80%;
             margin: 0 auto;
@@ -46,6 +52,10 @@
             font-size: 1em;
             margin-top: 0.5em;
         }
+
+        #commandInput {
+            width: 50%;
+        }
     </style>
 </head>
 <body>
@@ -53,6 +63,13 @@
     <div class="clock-container">
         <span>Time: <span id="clock">00:00</span></span>
     </div>
+
+    <div class="slider-container">
+        <label for="timeSlider">Simulation Time:</label>
+        <input type="range" id="timeSlider" min="0" max="1440" step="15" value="0">
+        <span id="sliderTime">00:00</span>
+    </div>
+
     <div id="map"></div>
 
     <div class="activity-display">
@@ -64,13 +81,13 @@
     <button onclick="sendCommand()">Send</button>
 
     <script>
-        // Embedded script.js
+        // The Simulation Script
         let map;
         let agents = {};
         let time = 0; // Time in minutes, starting at 0 (00:00) by default
         let interval;
         const updateInterval = 15; // 15 minutes per interval
-
+        let isAutoRunning = true; // Flag to check if auto simulation is running
         const agentColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A8", "#FF8F33", "#33FFF8", "#FF3333", "#8B33FF", "#FF8E33", "#33FF83"];
 
         function initMap() {
@@ -85,7 +102,7 @@
             if (command.toLowerCase().startsWith('start the day')) {
                 const timeMatch = command.match(/at (\d{1,2}:\d{2})/);
                 if (timeMatch) {
-                    time = timeToMinutes(timeMatch[1]); // Set custom start time
+                    time = timeToMinutes(timeMatch[1]); // setting custom start time
                 } else {
                     time = 0; // Default to 00:00 if no time is specified
                 }
@@ -111,7 +128,11 @@
 
         function startSimulation() {
             clearInterval(interval); // Ensure no previous interval is running
-            interval = setInterval(updateClock, 500); // Update every 0.5 seconds for faster progression
+            // Update every 1 second for faster progression
+            interval = setInterval(updateClock, 1000); 
+            isAutoRunning = true;
+            // Syncing slider with current time
+            document.getElementById("timeSlider").value = time; 
             document.getElementById("clock").textContent = formatTime(time);
         }
 
@@ -121,7 +142,23 @@
                 clearInterval(interval);
             }
             document.getElementById("clock").textContent = formatTime(time);
+            // Sync slider with current time
+            document.getElementById("timeSlider").value = time; 
+            document.getElementById("sliderTime").textContent = formatTime(time);
             updateAgents();
+        }
+        
+        // Slider Stuff
+        function sliderChange(event) {
+            // Stop auto simulation while slider is being used
+            clearInterval(interval); 
+            isAutoRunning = false;
+
+            time = parseInt(event.target.value, 10); // slider value in minutes
+            document.getElementById("clock").textContent = formatTime(time);
+            document.getElementById("sliderTime").textContent = formatTime(time);
+
+            updateAgents(); // Update map and activities based on the slider's value
         }
 
         function formatTime(minutes) {
@@ -182,7 +219,12 @@
             activityContainer.appendChild(activityInfo);
         }
 
-        window.onload = initMap;
+        window.onload = () => {
+            initMap();
+
+            const timeSlider = document.getElementById("timeSlider");
+            timeSlider.addEventListener("input", sliderChange); // Add event listener for slider input
+        };
     </script>
 </body>
 </html>
