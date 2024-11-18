@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Simulation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        /* Embedded style.css */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin: 0.5em;
+        }
+
+        #map {
+            height: 600px;
+            width: 80%;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            margin-bottom: 1em;
+        }
+
+        .clock-container {
+            font-size: 1.2em;
+            margin: 0.5em;
+        }
+
+        .activity-display {
+            width: 80%;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .agent-activity {
+            margin: 0.5em 0;
+        }
+
+        input[type="text"], button {
+            padding: 0.5em;
+            font-size: 1em;
+            margin-top: 0.5em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multi-Agent Simulation</h1>
+    <div class="clock-container">
+        <span>Time: <span id="clock">00:00</span></span>
+    </div>
+    <div id="map"></div>
+
+    <div class="activity-display">
+        <h2>Agent Activities</h2>
+        <div id="agent-activities"></div>
+    </div>
+
+    <input type="text" id="commandInput" placeholder="Type 'start the day' to begin simulation...">
+    <button onclick="sendCommand()">Send</button>
+
+    <script>
+        // Embedded script.js
+        let map;
+        let agents = {};
+        let time = 0; // Time in minutes, starting at 0 (00:00) by default
+        let interval;
+        const updateInterval = 15; // 15 minutes per interval
+
+        const agentColors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A8", "#FF8F33", "#33FFF8", "#FF3333", "#8B33FF", "#FF8E33", "#33FF83"];
+
+        function initMap() {
+            map = L.map('map').setView([35.6895, 139.6917], 11); // Centered on Tokyo
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+            }).addTo(map);
+        }
+
+        function sendCommand() {
+            const command = document.getElementById("commandInput").value.trim();
+            if (command.toLowerCase().startsWith('start the day')) {
+                const timeMatch = command.match(/at (\d{1,2}:\d{2})/);
+                if (timeMatch) {
+                    time = timeToMinutes(timeMatch[1]); // Set custom start time
+                } else {
+                    time = 0; // Default to 00:00 if no time is specified
+                }
+
+                fetch('/start_day', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    agents = data.agents;
+                    initializeAgentPaths();
+                    startSimulation();
+                });
+            }
+        }
+
+        function initializeAgentPaths() {
+            Object.keys(agents).forEach((agentId, index) => {
+                const color = agentColors[index % agentColors.length];
+                agents[agentId].polyline = L.polyline([], { color: color, weight: 3 }).addTo(map);
+            });
+        }
+
+        function startSimulation() {
+            clearInterval(interval); // Ensure no previous interval is running
+            interval = setInterval(updateClock, 500); // Update every 0.5 seconds for faster progression
+            document.getElementById("clock").textContent = formatTime(time);
+        }
+
+        function updateClock() {
+            time += updateInterval;
+            if (time >= 1440) { // Cap at 24 hours (1440 minutes)
+                clearInterval(interval);
+            }
+            document.getElementById("clock").textContent = formatTime(time);
+            updateAgents();
+        }
+
+        function formatTime(minutes) {
+            const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+            const mins = String(minutes % 60).padStart(2, '0');
+            return `${hours}:${mins}`;
+        }
+
+        function updateAgents() {
+            document.getElementById("agent-activities").innerHTML = ""; // Clear previous activities
+
+            Object.keys(agents).forEach(agentId => {
+                const activities = agents[agentId];
+                const currentActivity = activities.find(activity => {
+                    const startMinutes = timeToMinutes(activity.startTime);
+                    const endMinutes = timeToMinutes(activity.endTime);
+                    return time >= startMinutes && time < endMinutes;
+                });
+
+                if (currentActivity) {
+                    updateAgentMarker(agentId, currentActivity.lat, currentActivity.lng);
+                    addToAgentPath(agentId, currentActivity.lat, currentActivity.lng);
+                    displayAgentActivity(agentId, currentActivity);
+                }
+            });
+        }
+
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(":").map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function updateAgentMarker(agentId, lat, lng) {
+            if (!agents[agentId].marker) {
+                agents[agentId].marker = L.marker([lat, lng]).addTo(map);
+                agents[agentId].marker.bindTooltip(agentId.split('_').pop(), { permanent: true, direction: "right" }).openTooltip();
+            } else {
+                agents[agentId].marker.setLatLng([lat, lng]);
+            }
+        }
+
+        function addToAgentPath(agentId, lat, lng) {
+            agents[agentId].polyline.addLatLng([lat, lng]);
+        }
+
+        function displayAgentActivity(agentId, activity) {
+            const activityContainer = document.getElementById("agent-activities");
+
+            const activityInfo = document.createElement("div");
+            activityInfo.className = "agent-activity";
+            activityInfo.innerHTML = `
+                <strong>Agent ${agentId.split('_').pop()}</strong> - 
+                Activity: ${activity.activityType}, 
+                Location: ${activity.locationType}, 
+                Time: ${activity.startTime} - ${activity.endTime}
+            `;
+
+            activityContainer.appendChild(activityInfo);
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>

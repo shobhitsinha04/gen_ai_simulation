@@ -437,7 +437,7 @@ class MemoryModule:
         Output would be a float
         """
 
-        ##### - - - - - next lines 
+        ##### 
         categories = {
             "events" : 0.5, # (e.g., "passed a test," "attended a meeting")   #check if you can personalize this
             "entities": 0.2, # (e.g., "person," "location")
