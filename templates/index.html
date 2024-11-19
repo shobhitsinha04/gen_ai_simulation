@@ -214,12 +214,16 @@
             buttonsContainer.innerHTML = ''; // Clear any previous buttons
 
             Object.keys(agents).forEach((agentId, index) => {
+                const agentData = agents[agentId];
+                const name = agentData.name;
+                const age = agentData.age;
                 const button = document.createElement("button");
-                button.textContent = `Agent ${agentId.split('_').pop()}`;
+                button.textContent = `${name} (Age: ${age})`;
                 button.onclick = () => toggleAgentVisibility(agentId);
                 buttonsContainer.appendChild(button);
             });
         }
+
 
         function toggleAgentVisibility(agentId) {
             const polyline = agents[agentId]?.polyline;
@@ -238,22 +242,21 @@
 
         function initializeAgentPaths() {
             Object.keys(agents).forEach((agentId, index) => {
+                const agentData = agents[agentId];
                 const color = agentColors[index % agentColors.length];
-                agents[agentId].polyline = L.polyline([], { color: color, weight: 3 }).addTo(map);
+                agentData.polyline = L.polyline([], { color: color, weight: 3 }).addTo(map);
+                agentData.polylinePoints = [];
 
-                // Initialize an empty array for storing polyline points with timestamps
-                agents[agentId].polylinePoints = [];
-
-                // Add initial markers for each agent
-                const firstActivity = agents[agentId][0];
+                const firstActivity = agentData.activities[0];
                 if (firstActivity) {
                     const lat = firstActivity.lat;
                     const lng = firstActivity.lng;
-                    agents[agentId].marker = L.marker([lat, lng]).addTo(map);
-                    agents[agentId].marker.bindTooltip(agentId.split('_').pop(), { permanent: true, direction: "right" }).openTooltip();
+                    agentData.marker = L.marker([lat, lng]).addTo(map);
+                    agentData.marker.bindTooltip(agentData.name, { permanent: true, direction: "right" }).openTooltip();
                 }
             });
         }
+
 
 
         function startDay() {
@@ -303,12 +306,13 @@
 
         function updateAgents() {
             const activityContainer = document.getElementById("agent-activities");
-            const scrollTop = activityContainer.scrollTop; // Save the current scroll position
+            const scrollTop = activityContainer.scrollTop;
 
-            activityContainer.innerHTML = ""; // Clear the activity display
+            activityContainer.innerHTML = "";
 
             Object.keys(agents).forEach(agentId => {
-                const activities = agents[agentId];
+                const agentData = agents[agentId];
+                const activities = agentData.activities;
                 const currentActivity = activities.find(activity => {
                     const startMinutes = timeToMinutes(activity.startTime);
                     const endMinutes = timeToMinutes(activity.endTime);
@@ -322,9 +326,8 @@
                 }
             });
 
-            activityContainer.scrollTop = scrollTop; // Restore the scroll position
+            activityContainer.scrollTop = scrollTop;
         }
-
 
 
         function sliderChange(event) {
@@ -353,32 +356,33 @@
         }
 
         function updateAgentMarker(agentId, lat, lng) {
-            if (!agents[agentId].marker) {
-                agents[agentId].marker = L.marker([lat, lng]).addTo(map);
-                agents[agentId].marker.bindTooltip(agentId.split('_').pop(), { permanent: true, direction: "right" }).openTooltip();
+            const agentData = agents[agentId];
+            if (!agentData.marker) {
+                agentData.marker = L.marker([lat, lng]).addTo(map);
+                agentData.marker.bindTooltip(agentData.name, { permanent: true, direction: "right" }).openTooltip();
             } else {
-                agents[agentId].marker.setLatLng([lat, lng]);
+                agentData.marker.setLatLng([lat, lng]);
             }
         }
+
 
         function addToAgentPath(agentId, lat, lng, currentTime) {
-            if (!agents[agentId].polylinePoints) {
-                agents[agentId].polylinePoints = [];
+            const agentData = agents[agentId];
+            if (!agentData.polylinePoints) {
+                agentData.polylinePoints = [];
             }
 
-            // Add the current point with its associated timestamp
-            agents[agentId].polylinePoints.push({ lat, lng, time: currentTime });
+            agentData.polylinePoints.push({ lat, lng, time: currentTime });
 
-            // Filter points to show only up to the current time
-            const validPoints = agents[agentId].polylinePoints.filter(point => point.time <= currentTime);
-
-            // Update the polyline with the valid points
+            const validPoints = agentData.polylinePoints.filter(point => point.time <= currentTime);
             const latLngs = validPoints.map(point => [point.lat, point.lng]);
-            agents[agentId].polyline.setLatLngs(latLngs);
+            agentData.polyline.setLatLngs(latLngs);
         }
+
 
 
         function displayAgentActivity(agentId, activity) {
+            const agentData = agents[agentId];
             const activityContainer = document.getElementById("agent-activities");
 
             const activityIcons = {
@@ -391,11 +395,12 @@
 
             const activityInfo = document.createElement("div");
             activityInfo.className = "agent-activity";
-            activityInfo.style.borderLeftColor = agentColors[agentId.split('_').pop() % agentColors.length];
+            activityInfo.style.borderLeftColor = agentColors[parseInt(agentId) % agentColors.length];
             activityInfo.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 5px; color: ${agentColors[agentId.split('_').pop() % agentColors.length]};">
-                    Agent ${agentId.split('_').pop()}
+                <div style="font-weight: bold; margin-bottom: 5px; color: ${agentColors[parseInt(agentId) % agentColors.length]};">
+                    ${agentData.name} (Age: ${agentData.age})
                 </div>
+                <div>Occupation: <strong>${agentData.occupation}</strong></div>
                 <div>Activity: <strong>${activityIcons[activity.activityType] || "🏷️"} ${activity.activityType}</strong></div>
                 <div>Location: <strong>${activity.locationType}</strong></div>
                 <div>Time: <strong>${activity.startTime} - ${activity.endTime}</strong></div>
@@ -403,6 +408,7 @@
 
             activityContainer.appendChild(activityInfo);
         }
+
 
 
         document.getElementById("timeSlider").addEventListener("input", sliderChange);

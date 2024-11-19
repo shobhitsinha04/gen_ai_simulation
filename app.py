@@ -6,16 +6,21 @@ app = Flask(__name__)
 
 ROUTINE_DIR = './res/phy'  # adjust this path as needed
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+# Route for the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')  # Assuming index.html exists in the templates folder
 
 @app.route('/start_day', methods=['POST'])
 def start_day():
     agents_data = {}
     file_count = 0
 
-    # get a sorted list of files in the directory
+    # Load personas.json
+    with open('./res/personas.json', 'r') as personas_file:
+        personas = json.load(personas_file)
+
+    # Get a sorted list of files in the directory
     routine_files = sorted([f for f in os.listdir(ROUTINE_DIR) if f.endswith('.json')])
 
     for filename in routine_files:
@@ -24,9 +29,11 @@ def start_day():
             with open(file_path, 'r') as file:
                 data = json.load(file)
 
-                # sequential agent ID (0, 1, 2, 3, 4)
                 agent_id = str(file_count)
-                
+
+                # Get the corresponding persona
+                persona = personas[file_count]
+
                 activities = []
                 for entry in data:
                     activity = {
@@ -39,11 +46,18 @@ def start_day():
                         "lng": entry[4][1]
                     }
                     activities.append(activity)
-                
-                agents_data[agent_id] = activities
+
+                # Include persona data
+                agents_data[agent_id] = {
+                    "activities": activities,
+                    "name": persona.get('name', ''),
+                    "age": persona.get('age', ''),
+                    "occupation": persona.get('occupation', '')
+                }
             file_count += 1
 
     return jsonify({"agents": agents_data})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
