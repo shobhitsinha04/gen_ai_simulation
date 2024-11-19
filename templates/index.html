@@ -302,7 +302,10 @@
         }
 
         function updateAgents() {
-            document.getElementById("agent-activities").innerHTML = ""; // Clear the activity display
+            const activityContainer = document.getElementById("agent-activities");
+            const scrollTop = activityContainer.scrollTop; // Save the current scroll position
+
+            activityContainer.innerHTML = ""; // Clear the activity display
 
             Object.keys(agents).forEach(agentId => {
                 const activities = agents[agentId];
@@ -318,7 +321,10 @@
                     displayAgentActivity(agentId, currentActivity);
                 }
             });
+
+            activityContainer.scrollTop = scrollTop; // Restore the scroll position
         }
+
 
 
         function sliderChange(event) {
