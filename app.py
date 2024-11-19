@@ -52,11 +52,13 @@ def start_day():
                     "activities": activities,
                     "name": persona.get('name', ''),
                     "age": persona.get('age', ''),
+                    "gender": persona.get('gender', ''),
                     "occupation": persona.get('occupation', '')
                 }
             file_count += 1
 
     return jsonify({"agents": agents_data})
+
 
 
 if __name__ == '__main__':

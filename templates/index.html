@@ -57,9 +57,9 @@
         }
 
         #map {
-            height: 500px;
-            width: 90%;
-            margin: 1em auto;
+            height: 400px; /* Reduced height */
+            width: 100%;   /* Full width of the left column */
+            margin: 1em 0;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
@@ -70,6 +70,7 @@
             align-items: center;
             margin: 1.5em 0;
             gap: 1em;
+            margin-top: 1em;
         }
 
         .controls input {
@@ -100,6 +101,7 @@
             justify-content: center;
             flex-wrap: wrap;
             margin: 1em auto;
+            margin-top: 1em;
         }
 
         .agent-buttons button {
@@ -126,7 +128,6 @@
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
         }
 
         .activity-display h2 {
@@ -149,6 +150,58 @@
         .agent-activity:nth-child(even) {
             background-color: #f4f4f9; 
         }
+
+        .main-container {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        /* Left column styling */
+        .left-column {
+            flex: 1;
+            margin-right: 1em;
+        }
+
+        /* Right column styling */
+        .right-column {
+            flex: 0.5;
+            background-color: white;
+            padding: 1em;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .right-column h2 {
+            text-align: center;
+            margin-bottom: 1em;
+        }
+
+        .agent-info-item {
+            margin-bottom: 1em;
+            padding: 0.5em;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .agent-info-item h3 {
+            margin: 0 0 0.5em 0;
+            color: #333;
+        }
+
+        .agent-info-item p {
+            margin: 0.2em 0;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+
+
+
     </style>    
 </head>
 <body>
@@ -157,23 +210,35 @@
         <span><span id="clock">00:00</span></span>
     </div>
 
-    <div class="slider-container">
-        <label for="timeSlider">Simulation Time:</label>
-        <input type="range" id="timeSlider" min="0" max="1440" step="15" value="0">
-        <span id="sliderTime">00:00</span>
-    </div>
+    <div class="main-container">
+        <!-- Left Column -->
+        <div class="left-column">
+            <div class="slider-container">
+                <label for="timeSlider">Simulation Time:</label>
+                <input type="range" id="timeSlider" min="0" max="1440" step="15" value="0">
+                <span id="sliderTime">00:00</span>
+            </div>
 
-    <div id="map"></div>
+            <div id="map"></div>
 
-    <div class="controls">
-        <label for="startTime">Start Time:</label>
-        <input type="text" id="startTime" placeholder="00:00">
+            <div class="controls">
+                <label for="startTime">Start Time:</label>
+                <input type="text" id="startTime" placeholder="00:00">
+                <button onclick="startDay()">Start Day</button>
+            </div>
 
-        <button onclick="startDay()">Start Day</button>
-    </div>
+            <div class="agent-buttons" id="agentButtons">
+                <!-- Agent toggle buttons will be populated here -->
+            </div>
+        </div>
 
-    <div class="agent-buttons" id="agentButtons">
-        <!-- Agent toggle buttons will be populated here -->
+        <!-- Right Column -->
+        <div class="right-column">
+            <div class="agent-info-display">
+                <h2>Agent Information</h2>
+                <div id="agent-info"></div>
+            </div>
+        </div>
     </div>
 
     <div class="activity-display">
@@ -206,6 +271,7 @@
                     agents = data.agents;
                     initializeAgentPaths();
                     populateAgentButtons();
+                    displayAgentInfo();
                 });
         }
 
@@ -293,6 +359,27 @@
             document.getElementById("sliderTime").textContent = formatTime(time);
 
             updateAgents();
+        }
+        
+        function displayAgentInfo() {
+            const agentInfoContainer = document.getElementById("agent-info");
+            agentInfoContainer.innerHTML = ''; // Clear any existing content
+
+            Object.keys(agents).forEach(agentId => {
+                const agentData = agents[agentId];
+
+                const infoItem = document.createElement("div");
+                infoItem.className = "agent-info-item";
+                infoItem.style.borderLeft = `5px solid ${agentColors[parseInt(agentId) % agentColors.length]}`;
+
+                infoItem.innerHTML = `
+                    <h3>${agentData.name} (Age: ${agentData.age})</h3>
+                    <p><strong>Gender:</strong> ${agentData.gender}</p>
+                    <p><strong>Occupation:</strong> ${agentData.occupation}</p>
+                `;
+
+                agentInfoContainer.appendChild(infoItem);
+            });
         }
 
 
