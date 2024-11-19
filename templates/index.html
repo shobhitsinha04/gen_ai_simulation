@@ -149,6 +149,33 @@
         .agent-activity:nth-child(even) {
             background-color: #f4f4f9; 
         }
+        .agent-button {
+            position: relative;
+        }
+
+        .agent-button:hover::after {
+            content: attr(title);
+            position: absolute;
+            top: 100%; /* Position below the button */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 0.5em;
+            border-radius: 5px;
+            white-space: pre-line; /* Allow line breaks in tooltip */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-size: 0.9em;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .agent-button:hover::after {
+            opacity: 1;
+        }
+
     </style>    
 </head>
 <body>
@@ -217,12 +244,21 @@
                 const agentData = agents[agentId];
                 const name = agentData.name;
                 const age = agentData.age;
+                const occupation = agentData.occupation;
+
+                // Create a button
                 const button = document.createElement("button");
                 button.textContent = `${name} (Age: ${age})`;
+                button.classList.add("agent-button");
+
+                // Add hover tooltip
+                button.setAttribute("title", `Name: ${name}\nAge: ${age}\nOccupation: ${occupation}`);
+
                 button.onclick = () => toggleAgentVisibility(agentId);
                 buttonsContainer.appendChild(button);
             });
         }
+
 
 
         function toggleAgentVisibility(agentId) {
