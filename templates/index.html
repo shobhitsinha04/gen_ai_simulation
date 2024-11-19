@@ -7,63 +7,154 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        /* Styling for the simulation */
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+            font-family: "Roboto", Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
             margin: 0;
             padding: 0;
+            font-size: 16px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
         }
 
         h1 {
             font-size: 2em;
-            margin: 0.5em;
-        }
-
-        #map {
-            height: 600px;
-            width: 80%;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-            margin-bottom: 1em;
+            text-align: center;
+            margin-top: 1em;
         }
 
         .clock-container {
+            text-align: center;
             font-size: 1.2em;
-            margin: 0.5em;
+            margin: 1em;
+            font-weight: bold;
         }
 
         .slider-container {
-            margin: 1em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 1em auto;
+            font-size: 1.2em;
+        }
+
+        .slider-container label {
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        .slider-container input[type="range"] {
+            width: 70%; /* Larger slider width */
+            margin: 1em 0;
+            cursor: pointer;
+        }
+
+        .slider-container span {
+            font-size: 1.2em;
+            margin-top: 0.5em;
+            font-weight: bold;
+        }
+
+        #map {
+            height: 500px;
+            width: 90%;
+            margin: 1em auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .controls {
-            margin: 1em 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1.5em 0;
+            gap: 1em;
+        }
+
+        .controls input {
+            font-size: 1em;
+            padding: 0.5em;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .controls button {
+            font-size: 1em;
+            padding: 0.5em 1em;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .controls button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .agent-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 1em auto;
+        }
+
+        .agent-buttons button {
+            font-size: 1em;
+            padding: 0.5em 1em;
+            margin: 0.3em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .agent-buttons button:hover {
+            background-color: #1e7e34;
+            transform: translateY(-2px);
         }
 
         .activity-display {
-            width: 80%;
-            margin: 0 auto;
-            text-align: left;
+            width: 90%;
+            margin: 2em auto;
+            padding: 1em;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .activity-display h2 {
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 1em;
+            color: #333;
         }
 
         .agent-activity {
-            word-wrap: break-word;
-            overflow: hidden;
-        }
-
-
-        .agent-buttons button {
-            margin: 0.5em;
-            padding: 0.5em 1em;
             font-size: 1em;
+            padding: 1em;
+            margin: 1em 0;
+            background-color: #ffffff; 
+            border-left: 5px solid #007bff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
         }
-    </style>
+
+        .agent-activity:nth-child(even) {
+            background-color: #f4f4f9; 
+        }
+    </style>    
 </head>
 <body>
     <h1>Multi-Agent Simulation</h1>
     <div class="clock-container">
-        <span>Time: <span id="clock">00:00</span></span>
+        <span><span id="clock">00:00</span></span>
     </div>
 
     <div class="slider-container">
@@ -194,12 +285,13 @@
             }
 
             // Update clock display and slider position
-            document.getElementById("clock").textContent = formatTime(time);
+            document.getElementById("clock").textContent = `Time: ${formatTime(time)}`;
             document.getElementById("timeSlider").value = time;
             document.getElementById("sliderTime").textContent = formatTime(time);
 
             updateAgents();
         }
+
 
 
 
@@ -230,11 +322,12 @@
 
 
         function sliderChange(event) {
-            clearInterval(interval); // Stop automatic progression when slider is adjusted
+            // Stop automatic progression
+            clearInterval(interval);
 
             // Get the slider's current value and update the time
             time = parseInt(event.target.value, 10); // Convert slider value to minutes
-            document.getElementById("clock").textContent = formatTime(time);
+            document.getElementById("clock").textContent = `Time: ${formatTime(time)}`;
             document.getElementById("sliderTime").textContent = formatTime(time);
 
             // Update agents and their polylines based on slider time
@@ -244,6 +337,7 @@
             isAutoRunning = true;
             interval = setInterval(updateClock, 1000); // Restart auto progression
         }
+
 
 
 
@@ -281,17 +375,30 @@
         function displayAgentActivity(agentId, activity) {
             const activityContainer = document.getElementById("agent-activities");
 
+            const activityIcons = {
+                "education": "📚",
+                "leisure activities": "🎉",
+                "sleep": "🛏️",
+                "work": "💼",
+                "shopping": "🛒",
+            };
+
             const activityInfo = document.createElement("div");
             activityInfo.className = "agent-activity";
+            activityInfo.style.borderLeftColor = agentColors[agentId.split('_').pop() % agentColors.length];
             activityInfo.innerHTML = `
-                <strong>Agent ${agentId.split('_').pop()}</strong> - 
-                Activity: ${activity.activityType}, 
-                Location: ${activity.locationType}, 
-                Time: ${activity.startTime} - ${activity.endTime}
+                <div style="font-weight: bold; margin-bottom: 5px; color: ${agentColors[agentId.split('_').pop() % agentColors.length]};">
+                    Agent ${agentId.split('_').pop()}
+                </div>
+                <div>Activity: <strong>${activityIcons[activity.activityType] || "🏷️"} ${activity.activityType}</strong></div>
+                <div>Location: <strong>${activity.locationType}</strong></div>
+                <div>Time: <strong>${activity.startTime} - ${activity.endTime}</strong></div>
             `;
 
             activityContainer.appendChild(activityInfo);
         }
+
+
         document.getElementById("timeSlider").addEventListener("input", sliderChange);
         window.onload = initMap;
     </script>
