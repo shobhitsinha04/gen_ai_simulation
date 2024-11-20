@@ -57,7 +57,7 @@
         }
 
         #map {
-            height: 400px; /* Reduced height */
+            height: 500px; /* Reduced height */
             width: 100%;   /* Full width of the left column */
             margin: 1em 0;
             border-radius: 10px;
@@ -160,13 +160,13 @@
 
         /* Left column styling */
         .left-column {
-            flex: 1;
+            flex: 1.5;
             margin-right: 1em;
         }
 
         /* Right column styling */
         .right-column {
-            flex: 0.5;
+            flex: 1;
             background-color: white;
             padding: 1em;
             border-radius: 10px;
@@ -210,15 +210,15 @@
         <span><span id="clock">00:00</span></span>
     </div>
 
+    <div class="slider-container">
+        <label for="timeSlider">Simulation Time:</label>
+        <input type="range" id="timeSlider" min="0" max="1440" step="15" value="0">
+        <span id="sliderTime">00:00</span>
+    </div>
+
     <div class="main-container">
         <!-- Left Column -->
         <div class="left-column">
-            <div class="slider-container">
-                <label for="timeSlider">Simulation Time:</label>
-                <input type="range" id="timeSlider" min="0" max="1440" step="15" value="0">
-                <span id="sliderTime">00:00</span>
-            </div>
-
             <div id="map"></div>
 
             <div class="controls">
@@ -238,7 +238,10 @@
                 <h2>Agent Information</h2>
                 <div id="agent-info"></div>
             </div>
+            
+            
         </div>
+
     </div>
 
     <div class="activity-display">
