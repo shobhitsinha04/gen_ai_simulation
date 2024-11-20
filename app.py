@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 import os
 import json
 
@@ -14,7 +14,8 @@ def home():
 @app.route('/start_day', methods=['POST'])
 def start_day():
     agents_data = {}
-    file_count = 0
+    data = request.get_json()
+    num_agents = data.get('numAgents', 10)  # Default to 10 if not provided
 
     # Load personas.json
     with open('./res/personas.json', 'r') as personas_file:
@@ -23,41 +24,43 @@ def start_day():
     # Get a sorted list of files in the directory
     routine_files = sorted([f for f in os.listdir(ROUTINE_DIR) if f.endswith('.json')])
 
-    for filename in routine_files:
-        if file_count < 5:
-            file_path = os.path.join(ROUTINE_DIR, filename)
-            with open(file_path, 'r') as file:
-                data = json.load(file)
+    # Limit num_agents to available data
+    num_agents = min(num_agents, len(routine_files), len(personas))
 
-                agent_id = str(file_count)
+    for i in range(num_agents):
+        filename = routine_files[i]
+        file_path = os.path.join(ROUTINE_DIR, filename)
+        with open(file_path, 'r') as file:
+            data = json.load(file)
 
-                # Get the corresponding persona
-                persona = personas[file_count]
+        agent_id = str(i)
+        # Get the corresponding persona
+        persona = personas[i]
 
-                activities = []
-                for entry in data:
-                    activity = {
-                        "activityType": entry[0],
-                        "locationType": entry[1],
-                        "startTime": entry[2][0],
-                        "endTime": entry[2][1],
-                        "locationId": entry[3],
-                        "lat": entry[4][0],
-                        "lng": entry[4][1]
-                    }
-                    activities.append(activity)
+        activities = []
+        for entry in data:
+            activity = {
+                "activityType": entry[0],
+                "locationType": entry[1],
+                "startTime": entry[2][0],
+                "endTime": entry[2][1],
+                "locationId": entry[3],
+                "lat": entry[4][0],
+                "lng": entry[4][1]
+            }
+            activities.append(activity)
 
-                # Include persona data
-                agents_data[agent_id] = {
-                    "activities": activities,
-                    "name": persona.get('name', ''),
-                    "age": persona.get('age', ''),
-                    "gender": persona.get('gender', ''),
-                    "occupation": persona.get('occupation', '')
-                }
-            file_count += 1
+        # Include persona data
+        agents_data[agent_id] = {
+            "activities": activities,
+            "name": persona.get('name', ''),
+            "age": persona.get('age', ''),
+            "gender": persona.get('gender', ''),
+            "occupation": persona.get('occupation', '')
+        }
 
     return jsonify({"agents": agents_data})
+
 
 
 

@@ -108,7 +108,7 @@
             font-size: 1em;
             padding: 0.5em 1em;
             margin: 0.3em;
-            background-color: #28a745;
+            /* background-color: #28a745; */ /* Remove this line */
             color: white;
             border: none;
             border-radius: 5px;
@@ -117,17 +117,28 @@
         }
 
         .agent-buttons button:hover {
-            background-color: #1e7e34;
+            /* background-color: #1e7e34; */
             transform: translateY(-2px);
         }
 
+        .agent-button-on {
+            background-color: #28a745; /* Green */
+        }
+
+        .agent-button-off {
+            background-color: #dc3545; /* Red */
+        }
+
         .activity-display {
-            width: 90%;
-            margin: 2em auto;
+            width: 100%;
+            height: 600px; /* Set a fixed height as needed */
+            overflow-y: auto; /* Enable vertical scrolling */
+            margin: 1em 0;
             padding: 1em;
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-anchor: none;
         }
 
         .activity-display h2 {
@@ -144,7 +155,8 @@
             background-color: #ffffff; 
             border-left: 5px solid #007bff; 
             border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #000; 
         }
 
         .agent-activity:nth-child(even) {
@@ -186,6 +198,7 @@
             background-color: #f9f9f9;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: #000;
         }
 
         .agent-info-item h3 {
@@ -205,7 +218,7 @@
     </style>    
 </head>
 <body>
-    <h1>Multi-Agent Simulation</h1>
+    <h1>A Day in the Life of Tokyo Residents</h1>
     <div class="clock-container">
         <span><span id="clock">00:00</span></span>
     </div>
@@ -224,6 +237,10 @@
             <div class="controls">
                 <label for="startTime">Start Time:</label>
                 <input type="text" id="startTime" placeholder="00:00">
+
+                <label for="numAgents">Number of Agents:</label>
+                <input type="number" id="numAgents" min="1" max="50" value="10">
+
                 <button onclick="startDay()">Start Day</button>
             </div>
 
@@ -234,20 +251,21 @@
 
         <!-- Right Column -->
         <div class="right-column">
-            <div class="agent-info-display">
+            <!-- <div class="agent-info-display">
                 <h2>Agent Information</h2>
                 <div id="agent-info"></div>
+            </div> -->
+
+            <div class="activity-display">
+                <h2>Live Movement Updates</h2>
+                <div id="agent-activities"></div>
             </div>
             
-            
         </div>
-
     </div>
 
-    <div class="activity-display">
-        <h2>Agent Activities</h2>
-        <div id="agent-activities"></div>
-    </div>
+    
+
 
     <script>
         let map;
@@ -264,18 +282,25 @@
                 maxZoom: 18,
             }).addTo(map);
 
-            fetchAgents(); // Fetch and display agents on map initialization
+            // Removed fetchAgents(); from here
         }
 
-        function fetchAgents() {
-            fetch('/start_day', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    agents = data.agents;
-                    initializeAgentPaths();
-                    populateAgentButtons();
-                    displayAgentInfo();
-                });
+
+        function fetchAgents(numAgents) {
+            fetch('/start_day', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ numAgents: numAgents })
+            })
+            .then(response => response.json())
+            .then(data => {
+                agents = data.agents;
+                initializeAgentPaths();
+                populateAgentButtons();
+                displayAgentInfo();
+            });
         }
 
         function populateAgentButtons() {
@@ -289,25 +314,46 @@
                 const button = document.createElement("button");
                 button.textContent = `${name} (Age: ${age})`;
                 button.onclick = () => toggleAgentVisibility(agentId);
+
+                // Assign the 'agent-button-on' class to indicate the agent is visible
+                button.classList.add('agent-button-on');
+
+                // Store the button element in agentData for future reference
+                agentData.button = button;
+
                 buttonsContainer.appendChild(button);
             });
         }
 
 
-        function toggleAgentVisibility(agentId) {
-            const polyline = agents[agentId]?.polyline;
-            const marker = agents[agentId]?.marker;
 
-            if (polyline && marker) {
+        function toggleAgentVisibility(agentId) {
+            const agentData = agents[agentId];
+            const polyline = agentData?.polyline;
+            const marker = agentData?.marker;
+            const button = agentData?.button;
+
+            if (polyline && marker && button) {
                 if (map.hasLayer(polyline)) {
+                    // Agent is currently visible; hide it
                     map.removeLayer(polyline);
                     map.removeLayer(marker);
+
+                    // Update button class to 'agent-button-off'
+                    button.classList.remove('agent-button-on');
+                    button.classList.add('agent-button-off');
                 } else {
+                    // Agent is currently hidden; show it
                     map.addLayer(polyline);
                     map.addLayer(marker);
+
+                    // Update button class to 'agent-button-on'
+                    button.classList.remove('agent-button-off');
+                    button.classList.add('agent-button-on');
                 }
             }
         }
+
 
         function initializeAgentPaths() {
             Object.keys(agents).forEach((agentId, index) => {
@@ -330,13 +376,19 @@
 
         function startDay() {
             const startTime = document.getElementById("startTime").value.trim();
+            const numAgents = parseInt(document.getElementById("numAgents").value, 10);
             if (!/^([0-1]\d|2[0-3]):([0-5]\d)$/.test(startTime)) {
                 alert("Please enter a valid time in 24-hour format (e.g., 08:00).");
+                return;
+            }
+            if (isNaN(numAgents) || numAgents < 1) {
+                alert("Please enter a valid number of agents.");
                 return;
             }
             time = timeToMinutes(startTime); // Convert start time to minutes
             clearInterval(interval);         // Stop any previous simulation
             isAutoRunning = true;            // Allow automatic progression
+            fetchAgents(numAgents); 
             startSimulation();
         }
 
@@ -396,9 +448,11 @@
 
         function updateAgents() {
             const activityContainer = document.getElementById("agent-activities");
+            const previousScrollHeight = activityContainer.scrollHeight;
             const scrollTop = activityContainer.scrollTop;
 
-            activityContainer.innerHTML = "";
+            // Create a new document fragment to build the updated content
+            const fragment = document.createDocumentFragment();
 
             Object.keys(agents).forEach(agentId => {
                 const agentData = agents[agentId];
@@ -412,11 +466,46 @@
                 if (currentActivity) {
                     updateAgentMarker(agentId, currentActivity.lat, currentActivity.lng);
                     addToAgentPath(agentId, currentActivity.lat, currentActivity.lng, time);
-                    displayAgentActivity(agentId, currentActivity);
+                    const activityInfo = createActivityInfo(agentId, currentActivity);
+                    fragment.appendChild(activityInfo);
                 }
             });
 
-            activityContainer.scrollTop = scrollTop;
+            // Replace the content of activityContainer with the fragment
+            activityContainer.innerHTML = "";
+            activityContainer.appendChild(fragment);
+
+            // Restore the scroll position
+            if (activityContainer.scrollHeight !== previousScrollHeight) {
+                activityContainer.scrollTop = scrollTop;
+            }
+        }
+
+        function createActivityInfo(agentId, activity) {
+            const agentData = agents[agentId];
+
+            const activityIcons = {
+                "education": "📚",
+                "leisure activities": "🎉",
+                "sleep": "🛏️",
+                "work": "💼",
+                "shopping": "🛒",
+            };
+
+            const activityInfo = document.createElement("div");
+            activityInfo.className = "agent-activity";
+            activityInfo.style.borderLeftColor = agentColors[parseInt(agentId) % agentColors.length];
+            activityInfo.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px; color: ${agentColors[parseInt(agentId) % agentColors.length]};">
+                    ${agentData.name} (Age: ${agentData.age})
+                </div>
+                <div>Gender: <strong>${agentData.gender}</strong></div>
+                <div>Occupation: <strong>${agentData.occupation}</strong></div>
+                <div>Activity: <strong>${activityIcons[activity.activityType] || "🏷️"} ${activity.activityType}</strong></div>
+                <div>Location: <strong>${activity.locationType}</strong></div>
+                <div>Time: <strong>${activity.startTime} - ${activity.endTime}</strong></div>
+            `;
+            return activityInfo;
         }
 
 
@@ -490,6 +579,7 @@
                 <div style="font-weight: bold; margin-bottom: 5px; color: ${agentColors[parseInt(agentId) % agentColors.length]};">
                     ${agentData.name} (Age: ${agentData.age})
                 </div>
+                <div>Gender: <strong>${agentData.gender}</strong></div>
                 <div>Occupation: <strong>${agentData.occupation}</strong></div>
                 <div>Activity: <strong>${activityIcons[activity.activityType] || "🏷️"} ${activity.activityType}</strong></div>
                 <div>Location: <strong>${activity.locationType}</strong></div>
@@ -498,6 +588,7 @@
 
             activityContainer.appendChild(activityInfo);
         }
+
 
 
 
