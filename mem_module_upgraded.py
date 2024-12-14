@@ -6,6 +6,9 @@ import spacy
 import pandas as pd
 import numpy as np
 from math import exp
+import random
+
+# from helper.utils import haversine_dist
 
 # OpenAI API 
 openai.api_key = ''
@@ -70,7 +73,7 @@ class MemoryModule:
         persona_id: The ID of the persona
         date: The date of the activities to be summarized.
         """
-        #retrieve the activities for each date and then converts the activities to a json string format for input to the LLM
+        # retrieve the activities for each date and then converts the activities to a json string format for input to the LLM
         activities = self.daily_activities.get(persona_id, {}).get(date, [])
         activities_json = json.dumps(activities)
         
@@ -275,7 +278,6 @@ class MemoryModule:
             print(f"Error generating recommendation: {e}")
             return "Error generating the recommendation. Please try again later."
 
-
     def get_places_from_csv(self, file_path: str, activity_info: List) -> List[dict[str, str]]:
         places = []
         df = pd.read_csv(file_path)
@@ -294,40 +296,76 @@ class MemoryModule:
         return places
     
     def get_places_from_csv_TKY(self, file_path: str) -> List[dict[str, str]]:
-        columns = ['Category', 'lat', 'lng']
+        columns = ['ID', 'Category', 'lat', 'lng']
         df = pd.read_csv(file_path, usecols=columns)
 
         # Correct column references for 'lat' and 'lng'
-        df['Coordinates'] = list(zip(df['lat'], df['lng']))
-        df = df[['Category', 'Coordinates']]
+        df['Coordinates'] = df.apply(lambda row: [row['lat'], row['lng']], axis=1)
+        df = df[['ID', 'Category', 'Coordinates']]
 
         return df.to_dict(orient='records')
     
-    def generate_choice(self, loc: str, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
+    def haversine_dist(self, coord1: list[float, float], coord2: list[float, float]) -> float:
+        """
+        Calculate the great-circle distance between two points on the Earth (in km).
+        coord1, coord2: (latitude, longitude) in decimal degrees.
+        """
+        # Earth radius in kilometers
+        R = 6371.0
+
+        # Convert latitude and longitude from degrees to radians
+        lat1, lon1 = np.radians(coord1)
+        lat2, lon2 = np.radians(coord2)
+
+        # Differences in coordinates
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        # Haversine formula
+        a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+        # Distance in km
+        return R * c
+
+    def filter_places_within_radius(self, places: List[dict[str, any]], user_loc: Tuple[float, float], radius_km=10) -> List[dict[str, any]]:
+        filtered_places = []
+        for place in places:
+            distance = self.haversine_dist(user_loc, place['Coordinates'])
+            if distance <= radius_km:
+                place_with_dist = place.copy()
+                place_with_dist['Distance'] = distance  # Add distance to the place data
+                filtered_places.append(place_with_dist)
+        return filtered_places
+
+    def generate_choice(self, loc: str, user_loc, activity_info: List, recommendation: str, file_path: str) -> dict[str, any]:
         if loc == 'Sydney': 
             places = self.get_places_from_csv(file_path, activity_info)
         else:
             places = self.get_places_from_csv_TKY(file_path)
+            places = self.filter_places_within_radius(places, user_loc)
+
+        if len(places) > 150:
+            places = random.sample(places, 150)
 
         activities_str = f"Activity: {activity_info[0]}, Location Category: {activity_info[1]}, Time: {activity_info[2]}"
         
         # Creating the prompt
         prompt = (
         f"The persona has an activity info: {activities_str}. Based on the recommendation: '{recommendation}', "
-        f"please pick the best choice from the list of places in the attached CSV file. Provide the name, coordinates, "
+        f"please pick the best choice from the list of places in the attached CSV file. Provide the location ID, coordinates, "
         f"and an estimated transport time in minutes.\n"
         f"Return the choice in this format - ID, [latitude, longitude], minutes.\n"
-        f"The name should be a string, and the latitude and longitude should be floats. The minutes should be an integer.(do not include the word minutes, in the minutes, just the integer)\n"
+        f"The ID should be a string that is exactly the same as the picked location, and the latitude and longitude should be floats. The minutes should be an integer.(do not include the word minutes, in the minutes, just the integer)\n"
         f"Make sure not to output any other information other than just the choice, do not include any extra words"
         f"You should always respond with the required data in the format i mentioned above without any additional information, text or explanation.\n"
         f"The following is the location dataset you can pick from: \n"
     )
-
         for place in places:
             if loc == 'Sydney': 
                 prompt += f"{place['Name']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
             else:
-                prompt += f"{place['Coordinates']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]})\n"
+                prompt += f"ID: {place['ID']}, Category: {place['Category']}, Coordinates: ({place['Coordinates'][0]}, {place['Coordinates'][1]}), Distance from current location: {place['Distance']}\n"
 
         # Call the OpenAI API to generate the choice
         while True:
@@ -519,7 +557,6 @@ class MemoryModule:
         max_frequency = max(self.memory_access_counter.get(persona_id, {}).values(), default=0)  
         max_frequency = max(1, max_frequency)  # Ensure max_frequency is at least 1 to avoid division by zero
     
-        
         normalized_frequency = min(frequency / max_frequency, 1)
 
         # Calculating the overall importance score for the memory
@@ -781,6 +818,4 @@ if __name__ == "__main__":
 
     # Storing memory to files
     memory_module.store_memory_to_file()
-
-
 
