@@ -1,4 +1,4 @@
-res/routine*
+res/*
 plots
 backup.txt
 eval/gpt_persona.json
@@ -7,6 +7,8 @@ eval/llama_persona.json
 data/TKY/population_backup.json
 check.py
 mem
+POI_data/
+eval/expo_fit.py
 
 __pycache__
 helper/__pycache__
