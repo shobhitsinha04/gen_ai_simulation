@@ -121,13 +121,19 @@ The basic working hours are 7 or 8 hours from 9:00 to 17:00 or 18:00, for 5 (or 
 If their working hours include meal breaks, they tend to eat nearby.
 7. A primary or secondary school student’s day generally start their school at around 8:15 (30 mins variance), and classes end around 15:45 (30 mins variance). After school hours can be dedicated to club activities (in school). \
 College and university stdents tend to have more flexible schedule.
+8. During the workday, students at school/employees at work may or may not choose to eat out during mealtime.
+9. Students/employees who leave school/work during the workday usually do so for: \
+meals (possible activity: 'meal'), special activities(like social events etc.) or personal/sick leave (possible activity: 'go home', 'trifles'). \
+If the activity/meal ends before school or get off work time, students/employees who leave school/work for reasons other than personal/sick leave usually return to school/work to continue their studies/work for the day after the outing.
+10. For 'shopping' activity, slightly prioritize 'Other Shopping'. For 'trifles' activity, slightly prioritize 'Other Service'. This is due to the word Other implies many services/shopping options.
+
 
 Important:
 1. The format for the time should be in 24-hour format, i.e. 1:00 is 1 a.m., 13:00 is 1 p.m.
 2. The routine of a day must start at 0:00 and end at 23:59. \
 The routine should not have activities that exceed the time limit, i.e. you should not create activity that starts today and ends anytime tomorrow. \
 For example, you should create activity like '["sleep", "Home", ["22:18", "23:59"]]'.
-3. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity. 
+3. You can pick one activity only from your daily activitiy list, and one location for the chosen activity only from the location list of that activity. For example, "Social Event" is a location, and the cooresponding activity name is "leisure activities".
 4. Most full time worker works around 8 hours a day during working day.
 Answer format: [activity name, location, [start time, end time]].
 
@@ -135,13 +141,14 @@ Answer format: [activity name, location, [start time, end time]].
 1. ["sleep", "Home", ["0:00", "8:22"]]
 2. ["work", "Workplace", ["13:32", "17:30"]]
 3. ["eat", "Cafe", ["11:49", "12:12"]]
-4. ["sleep", "Hotel", ["22:25", "23:59"]]
+4. ["shopping", "Other Shopping", ["15:33", "18:09"]]
 5. ["sports and exercise", "Gym", ["19:21", "20:02"]]
-6. ["work", "Workplace", ["8:12", "20:27"]]
+6. ["work", "Workplace", ["13:12", "20:27"]]
 7. ["education", "Primary and Secondary School", ["8:23", "17:51"]]
 8. ["sleep", "Home", ["0:00", "9:47"]]
 9. ["leisure activities", "Entertainment", ["21:31", "23:14"]]
-10. ["shopping", "Other Shopping", ["15:33", "18:09"]]
+10. ["sleep", "Hotel", ["22:25", "23:59"]]
+
 
 Important: You should always responds required data in json list format, but without any additional introduction, text or explanation.
 """. format(date, weekday, time, [sublist[:3] for sublist in pre_mot], mem, time)

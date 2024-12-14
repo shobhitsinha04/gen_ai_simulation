@@ -4,8 +4,9 @@ import datetime
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from mem_module_upgraded import MemoryModule
 import openai
+import numpy as np
 
-model_name = "/mnt/data728/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct"
+model_name = ''
 openai.api_key = ''
 
 act_loc = {
@@ -70,7 +71,7 @@ def gpt_generate(context, msg, token=512):
         )
     except openai.OpenAIError as e:
         print(f"Error GPT no reponse: {e}")
-        return
+        return e
 
     return res['choices'][0]['message']['content'].strip()
 
@@ -109,3 +110,26 @@ def mem_retrieval(memory_module: MemoryModule, persona: int, date, weekday):
         print("Daily Memory: {}".format(daily_mem))
 
     return monthly_mem + weekly_mem + daily_mem
+
+def haversine_dist(coord1: list[float, float], coord2: list[float, float]) -> float:
+        """
+        Calculate the great-circle distance between two points on the Earth (in km).
+        coord1, coord2: (latitude, longitude) in decimal degrees.
+        """
+        # Earth radius in kilometers
+        R = 6371.0
+
+        # Convert latitude and longitude from degrees to radians
+        lat1, lon1 = np.radians(coord1)
+        lat2, lon2 = np.radians(coord2)
+
+        # Differences in coordinates
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        # Haversine formula
+        a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+        # Distance in km
+        return R * c
