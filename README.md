@@ -5,11 +5,11 @@ This repository focuses on **Generative AI Simulation**, allowing users to explo
 ## Complete Code Repository
 
 This is just testing code, the complete code for this project is available in a linked repository:  
-[TrajLLM Repository](https://github.com/cju0/TrajLLM)
+https://github.com/shobhitsinha04/TrajLLM
 
 ## Getting Started
 
-To explore this project, follow the instructions in the [TrajLLM Repository README](https://github.com/cju0/TrajLLM).
+To explore this project, follow the instructions in the linked README file: https://github.com/shobhitsinha04/TrajLLM/blob/master/README.md
 
 ## Features
 
