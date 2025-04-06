@@ -4,7 +4,7 @@ This repository focuses on **Generative AI Simulation**, allowing users to explo
 
 ## Complete Code Repository
 
-The complete code for this project is available in a linked repository:  
+This is just testing code, the complete code for this project is available in a linked repository:  
 [TrajLLM Repository](https://github.com/cju0/TrajLLM)
 
 ## Getting Started
